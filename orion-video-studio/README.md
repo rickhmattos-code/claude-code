@@ -95,3 +95,7 @@ Os testes de integração usam o banco `orion_test` e o Redis db 1, e recriam am
 ## Licenças de conteúdo
 
 Código: proprietário do projeto (defina antes de distribuir). Fontes Inter: SIL OFL 1.1 (`assets/fonts/OFL.txt`). Música, efeitos e fixtures: CC0, sintetizados por `scripts/make-fixtures.ts`. FFmpeg com libx264 é GPL ao ser distribuído (ver `docs/04`).
+
+## Evidências
+
+`docs/evidencias/` traz capturas do editor (desktop e móvel), da galeria de templates, do editor de legendas, da exportação e da página de integrações. Traz também **`exemplo-90s-720p.mp4`**, exportado pelo worker a partir do projeto de exemplo e validado: 90,000 s, H.264 + AAC, 720×1280.
