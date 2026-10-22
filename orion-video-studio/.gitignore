@@ -1,0 +1,12 @@
+*.log
+.data
+.env
+.next
+coverage
+dist
+next-env.d.ts
+node_modules
+packages/db/src/generated
+playwright-report
+test-results
+tsconfig.tsbuildinfo

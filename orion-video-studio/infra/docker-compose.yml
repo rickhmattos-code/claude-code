@@ -1,0 +1,92 @@
+# ORION VIDEO STUDIO — ambiente local completo
+#   docker compose -f infra/docker-compose.yml up --build
+#   docker compose -f infra/docker-compose.yml --profile seed run --rm seed   # catálogo + usuário demo
+# Web: http://localhost:3000 · API: http://localhost:4000 · MinIO: http://localhost:9001
+name: orion
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql://orion:orion@postgres:5432/orion
+  REDIS_URL: redis://redis:6379
+  STORAGE_DRIVER: s3
+  S3_ENDPOINT: http://minio:9000
+  S3_PUBLIC_ENDPOINT: http://localhost:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: orion-media
+  S3_ACCESS_KEY_ID: orion
+  S3_SECRET_ACCESS_KEY: orion-minio-secret
+  S3_FORCE_PATH_STYLE: "true"
+  WEB_ORIGIN: http://localhost:3000
+  API_PUBLIC_URL: http://localhost:4000
+  URL_SIGNING_SECRET: ${URL_SIGNING_SECRET:-troque-este-segredo-local-com-32-caracteres}
+  # chaves opcionais (deixe vazio para "configuração pendente")
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+services:
+  postgres:
+    image: postgres:16.10-alpine
+    environment: { POSTGRES_USER: orion, POSTGRES_PASSWORD: orion, POSTGRES_DB: orion }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U orion"], interval: 5s, retries: 20 }
+    ports: ["5432:5432"]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 5s, retries: 20 }
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment: { MINIO_ROOT_USER: orion, MINIO_ROOT_PASSWORD: orion-minio-secret, MINIO_API_CORS_ALLOW_ORIGIN: "http://localhost:3000" }
+    volumes: [miniodata:/data]
+    ports: ["9000:9000", "9001:9001"]
+    healthcheck: { test: ["CMD", "mc", "ready", "local"], interval: 5s, retries: 20 }
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on: { minio: { condition: service_healthy } }
+    entrypoint: ["sh", "-c", "mc alias set local http://minio:9000 orion orion-minio-secret && mc mb --ignore-existing local/orion-media"]
+
+  api:
+    image: orion-api:local
+    build: { context: .., dockerfile: infra/docker/Dockerfile, target: api }
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+    ports: ["4000:4000"]
+
+  worker:
+    image: orion-worker:local
+    build: { context: .., dockerfile: infra/docker/Dockerfile, target: worker }
+    environment:
+      <<: *app-env
+      WORKER_CONCURRENCY_RENDER: "1"
+      WORKER_CONCURRENCY_MEDIA: "2"
+    depends_on: [api]
+    volumes: [workertmp:/data/tmp]
+    # isolamento do processamento de mídia não confiável
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    deploy: { resources: { limits: { cpus: "4", memory: 6g } } }
+
+  seed:
+    image: orion-worker:local
+    environment: *app-env
+    depends_on: [api]
+    profiles: [seed]
+    command: ["sh", "-c", "cd apps/worker && SEED_DEMO=1 node --import tsx src/seed.ts"]
+
+  web:
+    image: orion-web:local
+    build: { context: .., dockerfile: infra/docker/Dockerfile, target: web }
+    environment: { API_INTERNAL_URL: http://api:4000 }
+    depends_on: [api]
+    ports: ["3000:3000"]
+
+volumes: { pgdata: {}, redisdata: {}, miniodata: {}, workertmp: {} }

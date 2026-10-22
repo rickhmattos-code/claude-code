@@ -1,0 +1,22 @@
+{
+  "name": "@orion/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "start": "tsx src/main.ts",
+    "seed": "tsx --env-file-if-exists=../../.env src/seed.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@orion/db": "*",
+    "@orion/media": "*",
+    "@orion/providers": "*",
+    "@orion/server": "*",
+    "@orion/shared": "*",
+    "@orion/timeline": "*",
+    "bullmq": "5.81.5",
+    "ioredis": "5.11.1"
+  }
+}

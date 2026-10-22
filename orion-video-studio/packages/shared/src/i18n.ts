@@ -1,0 +1,118 @@
+/**
+ * Internacionalização. O idioma de referência é pt-BR; outros idiomas
+ * declaram apenas as chaves traduzidas e caem para pt-BR no restante.
+ * Para adicionar um idioma: crie o dicionário parcial, registre em LOCALES.
+ */
+export const ptBR = {
+  'app.name': 'Orion Video Studio',
+  'nav.projects': 'Projetos',
+  'nav.templates': 'Templates',
+  'nav.assistant': 'Assistente',
+  'nav.music': 'Músicas',
+  'nav.brand': 'Identidade visual',
+  'nav.characters': 'Personagens',
+  'nav.voices': 'Estúdio de voz',
+  'nav.history': 'Gerações e exportações',
+  'nav.providers': 'Integrações',
+  'nav.logout': 'Sair',
+  'auth.login': 'Entrar',
+  'auth.register': 'Criar conta',
+  'auth.email': 'E-mail',
+  'auth.password': 'Senha',
+  'auth.name': 'Nome',
+  'auth.passwordHint': 'Mínimo de 10 caracteres.',
+  'auth.noAccount': 'Não tem conta?',
+  'auth.hasAccount': 'Já tem conta?',
+  'projects.new': 'Novo projeto',
+  'projects.empty': 'Nenhum projeto ainda. Crie o primeiro ou parta de um template.',
+  'projects.name': 'Nome do projeto',
+  'projects.format': 'Formato',
+  'projects.create': 'Criar projeto',
+  'projects.open': 'Abrir',
+  'projects.delete': 'Excluir',
+  'projects.updated': 'Atualizado',
+  'editor.media': 'Mídia',
+  'editor.text': 'Texto',
+  'editor.audio': 'Áudio',
+  'editor.captions': 'Legendas',
+  'editor.voice': 'Voz',
+  'editor.ai': 'Cenas IA',
+  'editor.templates': 'Templates',
+  'editor.brand': 'Marca',
+  'editor.assistant': 'Assistente',
+  'editor.inspector': 'Propriedades',
+  'editor.export': 'Exportar',
+  'editor.versions': 'Versões',
+  'editor.saved': 'Salvo',
+  'editor.saving': 'Salvando…',
+  'editor.unsaved': 'Alterações não salvas',
+  'editor.conflict': 'Conflito: o projeto foi alterado em outra aba',
+  'editor.offline': 'Sem conexão — alterações guardadas localmente',
+  'editor.undo': 'Desfazer',
+  'editor.redo': 'Refazer',
+  'editor.split': 'Dividir',
+  'editor.duplicate': 'Duplicar',
+  'editor.delete': 'Excluir',
+  'editor.rippleDelete': 'Excluir e fechar espaço',
+  'editor.snap': 'Imã',
+  'editor.zoomIn': 'Aproximar',
+  'editor.zoomOut': 'Afastar',
+  'editor.play': 'Reproduzir',
+  'editor.pause': 'Pausar',
+  'editor.marker': 'Marcador',
+  'editor.freeze': 'Congelar quadro',
+  'editor.reverse': 'Inverter',
+  'editor.upload': 'Enviar arquivos',
+  'editor.dropHere': 'Solte arquivos aqui',
+  'editor.record': 'Gravar narração',
+  'editor.noSelection': 'Selecione um clipe para editar as propriedades.',
+  'editor.safeArea': 'Área segura',
+  'render.title': 'Exportar vídeo',
+  'render.start': 'Iniciar exportação',
+  'render.download': 'Baixar MP4',
+  'render.captions': 'Legendas',
+  'render.cancel': 'Cancelar',
+  'status.queued': 'Na fila',
+  'status.running': 'Processando',
+  'status.succeeded': 'Concluído',
+  'status.failed': 'Falhou',
+  'status.canceled': 'Cancelado',
+  'provider.pending': 'Configuração pendente',
+  'provider.mock': 'MODO DE TESTE',
+  'provider.live': 'Ativo',
+  'provider.local': 'Local',
+  'cost.estimate': 'Custo estimado',
+  'cost.unknown': 'Sem dado confiável de preço',
+  'cost.confirm': 'Confirmar e gerar',
+  'common.save': 'Salvar',
+  'common.cancel': 'Cancelar',
+  'common.close': 'Fechar',
+  'common.apply': 'Aplicar',
+  'common.loading': 'Carregando…',
+  'common.retry': 'Tentar novamente',
+  'common.search': 'Buscar',
+  'common.add': 'Adicionar',
+  'common.edit': 'Editar',
+  'common.remove': 'Remover',
+  'common.preview': 'Prévia',
+} as const
+
+export type MessageKey = keyof typeof ptBR
+type Dict = Partial<Record<MessageKey, string>>
+
+export const en: Dict = {
+  'app.name': 'Orion Video Studio',
+  'nav.projects': 'Projects',
+  'nav.templates': 'Templates',
+  'auth.login': 'Sign in',
+  'auth.register': 'Create account',
+}
+
+export const LOCALES: Record<string, Dict> = { 'pt-BR': ptBR, en }
+
+export function translate(locale: string, key: MessageKey, vars?: Record<string, string | number>): string {
+  const dict = LOCALES[locale] ?? ptBR
+  let s: string = dict[key] ?? ptBR[key] ?? key
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v))
+  return s
+}

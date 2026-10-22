@@ -1,0 +1,554 @@
+// ORION VIDEO STUDIO — modelo de dados
+// Convenções:
+//  * Tempo em "flicks" (1/705_600_000 s) armazenado como BigInt.
+//  * Todo registro de negócio pertence a um Workspace; o isolamento é
+//    aplicado na camada de serviço (packages/db/src/scope.ts) e por FKs.
+//  * ProjectRevision é imutável (nenhum UPDATE é emitido pelo código).
+//  * Exclusões de mídia são lógicas (deletedAt) e o GC físico só remove
+//    ativos sem referências (Clip.assetId usa onDelete: Restrict).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum AssetKind {
+  VIDEO
+  AUDIO
+  IMAGE
+  SUBTITLE
+}
+
+enum AssetStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum AssetSource {
+  UPLOAD
+  RECORDING
+  GENERATED
+  TTS
+  RENDER
+  CATALOG
+  DERIVED
+}
+
+enum UploadMode {
+  SINGLE
+  MULTIPART
+}
+
+enum UploadStatus {
+  CREATED
+  COMPLETED
+  ABORTED
+  EXPIRED
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+  canceled
+}
+
+enum GenerationKind {
+  VIDEO
+  IMAGE
+  TTS
+  TRANSCRIPTION
+  SCRIPT
+  MUSIC
+}
+
+enum LedgerStatus {
+  ESTIMATED
+  CONFIRMED
+  VOID
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  locale       String       @default("pt-BR")
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  sessions     Session[]
+  favorites    MusicFavorite[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Workspace {
+  id                    String             @id @default(uuid())
+  name                  String
+  plan                  String             @default("local")
+  quotaBytes            BigInt
+  generationBudgetCents Int
+  createdAt             DateTime           @default(now())
+  memberships           Membership[]
+  projects              Project[]
+  assets                Asset[]
+  uploads               Upload[]
+  templates             Template[]
+  brandKits             BrandKit[]
+  characters            CharacterProfile[]
+  voices                VoiceProfile[]
+  musicTracks           MusicTrack[]
+  generationJobs        GenerationJob[]
+  renderJobs            RenderJob[]
+  usage                 UsageLedger[]
+  auditEvents           AuditEvent[]
+}
+
+model Membership {
+  id          String    @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        Role
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Project {
+  id          String            @id @default(uuid())
+  workspaceId String
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  /// Documento de edição atual (TimelineDoc validado por schema compartilhado)
+  document    Json
+  /// Controle de concorrência otimista para salvamento automático
+  docVersion  Int               @default(1)
+  createdById String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+  revisions   ProjectRevision[]
+  timeline    Timeline?
+  renderJobs  RenderJob[]
+  generations GenerationJob[]
+
+  @@index([workspaceId, updatedAt])
+}
+
+/// Snapshot imutável do documento. Renderizações referenciam uma revisão,
+/// então editar o projeto durante a exportação não altera o resultado.
+model ProjectRevision {
+  id          String      @id @default(uuid())
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number      Int
+  document    Json
+  docVersion  Int
+  reason      String
+  createdById String
+  createdAt   DateTime    @default(now())
+  renderJobs  RenderJob[]
+
+  @@unique([projectId, number])
+}
+
+model Asset {
+  id             String        @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  kind           AssetKind
+  status         AssetStatus   @default(PENDING)
+  source         AssetSource
+  storageKey     String        @unique
+  mimeType       String
+  sizeBytes      BigInt        @default(0)
+  originalName   String
+  sha256         String?
+  durationFlicks BigInt?
+  width          Int?
+  height         Int?
+  fpsNum         Int?
+  fpsDen         Int?
+  variableFrameRate Boolean    @default(false)
+  rotation       Int           @default(0)
+  hasVideo       Boolean       @default(false)
+  hasAudio       Boolean       @default(false)
+  sampleRate     Int?
+  channels       Int?
+  probe          Json?
+  thumbnailKey   String?
+  waveformKey    String?
+  proxyKey       String?
+  error          String?
+  createdAt      DateTime      @default(now())
+  deletedAt      DateTime?
+  uploads        Upload[]
+  clips          Clip[]
+  characterRefs  CharacterReference[]
+  musicTracks    MusicTrack[]
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, kind])
+}
+
+model Upload {
+  id           String       @id @default(uuid())
+  workspaceId  String
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assetId      String
+  asset        Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  mode         UploadMode
+  status       UploadStatus @default(CREATED)
+  storageKey   String
+  s3UploadId   String?
+  expectedSize BigInt
+  partSize     Int?
+  expiresAt    DateTime
+  createdAt    DateTime     @default(now())
+
+  @@index([status, expiresAt])
+}
+
+// ---- Projeção relacional da timeline (fonte de verdade: Project.document) ----
+
+model Timeline {
+  id             String           @id @default(uuid())
+  projectId      String           @unique
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  durationFlicks BigInt
+  fpsNum         Int
+  fpsDen         Int
+  width          Int
+  height         Int
+  docVersion     Int
+  tracks         Track[]
+  captions       CaptionSegment[]
+}
+
+model Track {
+  id         String   @id
+  timelineId String
+  timeline   Timeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  kind       String
+  name       String
+  index      Int
+  muted      Boolean
+  locked     Boolean
+  hidden     Boolean
+  solo       Boolean
+  clips      Clip[]
+
+  @@index([timelineId])
+}
+
+model Clip {
+  id             String     @id
+  trackId        String
+  track          Track      @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  /// Restrict: um ativo referenciado por clipe não pode ser apagado fisicamente
+  assetId        String?
+  asset          Asset?     @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  kind           String
+  startFlicks    BigInt
+  durationFlicks BigInt
+  sourceInFlicks BigInt
+  speed          Float
+  props          Json
+  effects        Effect[]
+  keyframes      Keyframe[]
+
+  @@index([trackId, startFlicks])
+  @@index([assetId])
+}
+
+model Effect {
+  id     String @id
+  clipId String
+  clip   Clip   @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  type   String
+  order  Int
+  params Json
+}
+
+model Keyframe {
+  id         String @id @default(uuid())
+  clipId     String
+  clip       Clip   @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  property   String
+  timeFlicks BigInt
+  value      Float
+  easing     String
+
+  @@index([clipId, property])
+}
+
+model CaptionSegment {
+  id          String   @id
+  timelineId  String
+  timeline    Timeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  startFlicks BigInt
+  endFlicks   BigInt
+  text        String
+  speaker     String?
+  words       Json?
+  linkedClipId String?
+
+  @@index([timelineId, startFlicks])
+}
+
+// ---- Criação ----
+
+model Template {
+  id          String     @id @default(uuid())
+  /// null = template do sistema
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  slug        String
+  version     Int
+  name        String
+  category    String
+  definition  Json
+  isSystem    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  @@unique([workspaceId, slug, version])
+  @@index([category])
+}
+
+model BrandKit {
+  id               String    @id @default(uuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name             String
+  displayName      String
+  socialHandle     String?
+  signature        String?
+  palette          Json
+  fonts            Json
+  captionStyle     Json
+  logoAssetId      String?
+  watermarkAssetId String?
+  introAssetId     String?
+  outroAssetId     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+model VoiceProfile {
+  id              String             @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name            String
+  provider        String
+  providerVoiceId String
+  language        String             @default("pt-BR")
+  settings        Json
+  isClone         Boolean            @default(false)
+  /// Obrigatório quando isClone = true (quem autorizou, quando, documento)
+  consent         Json?
+  createdAt       DateTime           @default(now())
+  characters      CharacterProfile[]
+
+  @@index([workspaceId])
+}
+
+model CharacterProfile {
+  id              String               @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name            String
+  description     String
+  appearance      String
+  wardrobe        String
+  palette         Json
+  mustKeep        Json
+  continuityRules String
+  voiceProfileId  String?
+  voiceProfile    VoiceProfile?        @relation(fields: [voiceProfileId], references: [id], onDelete: SetNull)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  references      CharacterReference[]
+
+  @@index([workspaceId])
+}
+
+model CharacterReference {
+  id           String           @id @default(uuid())
+  characterId  String
+  character    CharacterProfile @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  assetId      String
+  asset        Asset            @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  /// Declaração de autorização de uso da imagem
+  authorization String
+  createdAt    DateTime         @default(now())
+}
+
+model LicenseRecord {
+  id                   String       @id @default(uuid())
+  source               String
+  author               String
+  licenseName          String
+  licenseUrl           String?
+  commercialUse        Boolean
+  attributionRequired  Boolean
+  attributionText      String?
+  platformRestrictions String?
+  validUntil           DateTime?
+  createdAt            DateTime     @default(now())
+  musicTracks          MusicTrack[]
+}
+
+model MusicTrack {
+  id              String          @id @default(uuid())
+  /// null = catálogo global
+  workspaceId     String?
+  workspace       Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assetId         String
+  asset           Asset           @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  licenseRecordId String
+  license         LicenseRecord   @relation(fields: [licenseRecordId], references: [id], onDelete: Restrict)
+  title           String
+  artist          String
+  genre           String
+  mood            String
+  bpm             Int?
+  durationFlicks  BigInt
+  isSfx           Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  favorites       MusicFavorite[]
+
+  @@index([workspaceId, isSfx])
+}
+
+model MusicFavorite {
+  userId       String
+  musicTrackId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  musicTrack   MusicTrack @relation(fields: [musicTrackId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, musicTrackId])
+}
+
+// ---- Processamento ----
+
+model GenerationJob {
+  id                 String         @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId          String?
+  project            Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  kind               GenerationKind
+  provider           String
+  model              String
+  status             JobStatus      @default(queued)
+  input              Json
+  /// sha256 do input normalizado — permite reutilizar resultados aprovados
+  inputHash          String
+  idempotencyKey     String         @unique
+  /// ID no provedor externo; reconciliado antes de qualquer nova tentativa
+  remoteId           String?
+  sceneKey           String?
+  estimatedCostCents Int            @default(0)
+  confirmedCostCents Int?
+  resultAssetId      String?
+  result             Json?
+  error              String?
+  attempts           Int            @default(0)
+  approved           Boolean        @default(false)
+  createdById        String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, inputHash])
+  @@index([projectId, sceneKey])
+}
+
+model RenderJob {
+  id             String          @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revisionId     String
+  revision       ProjectRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  status         JobStatus       @default(queued)
+  progress       Float           @default(0)
+  stage          String?
+  preset         Json
+  idempotencyKey String          @unique
+  outputAssetId  String?
+  captionsAssetId String?
+  validation     Json?
+  error          String?
+  attempts       Int             @default(0)
+  cancelRequested Boolean        @default(false)
+  createdById    String
+  createdAt      DateTime        @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+
+  @@index([workspaceId, createdAt])
+  @@index([projectId])
+}
+
+model UsageLedger {
+  id             String       @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  jobId          String?
+  kind           String
+  provider       String
+  quantity       Float
+  unit           String
+  estimatedCents Int
+  confirmedCents Int?
+  status         LedgerStatus
+  createdAt      DateTime     @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@unique([jobId, kind])
+}
+
+model AuditEvent {
+  id          String     @id @default(uuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String?
+  action      String
+  targetType  String
+  targetId    String?
+  meta        Json?
+  ip          String?
+  createdAt   DateTime   @default(now())
+
+  @@index([workspaceId, createdAt])
+}

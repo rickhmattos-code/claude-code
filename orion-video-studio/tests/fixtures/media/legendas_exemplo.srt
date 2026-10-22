@@ -1,0 +1,7 @@
+1
+00:00:01,000 --> 00:00:03,200
+Primeira legenda de exemplo
+
+2
+00:00:03,400 --> 00:00:06,000
+Segunda linha, com vírgula

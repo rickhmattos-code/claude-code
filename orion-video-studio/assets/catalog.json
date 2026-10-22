@@ -1,0 +1,133 @@
+{
+  "license": {
+    "source": "Orion Studio — gerado por scripts/make-fixtures.ts",
+    "author": "Orion Studio",
+    "licenseName": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "commercialUse": true,
+    "attributionRequired": false,
+    "platformRestrictions": null
+  },
+  "tracks": [
+    {
+      "file": "music/aurora-calma.m4a",
+      "title": "Aurora Calma",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "ambiente",
+      "mood": "contemplativo",
+      "bpm": 70,
+      "isSfx": false,
+      "seconds": 82.3
+    },
+    {
+      "file": "music/passo-firme.m4a",
+      "title": "Passo Firme",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "eletrônico",
+      "mood": "energético",
+      "bpm": 124,
+      "isSfx": false,
+      "seconds": 77.4
+    },
+    {
+      "file": "music/horizonte-aberto.m4a",
+      "title": "Horizonte Aberto",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "corporativo",
+      "mood": "inspirador",
+      "bpm": 100,
+      "isSfx": false,
+      "seconds": 76.8
+    },
+    {
+      "file": "music/lume-antigo.m4a",
+      "title": "Lume Antigo",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "trilha",
+      "mood": "cinematográfico",
+      "bpm": 60,
+      "isSfx": false,
+      "seconds": 80
+    },
+    {
+      "file": "music/quadro-leve.m4a",
+      "title": "Quadro Leve",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "acústico",
+      "mood": "leve",
+      "bpm": 92,
+      "isSfx": false,
+      "seconds": 73
+    },
+    {
+      "file": "music/risada-curta.m4a",
+      "title": "Risada Curta",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "cômico",
+      "mood": "divertido",
+      "bpm": 132,
+      "isSfx": false,
+      "seconds": 43.6
+    },
+    {
+      "file": "sfx/whoosh.m4a",
+      "title": "Whoosh",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "efeito",
+      "mood": "transição",
+      "bpm": null,
+      "isSfx": true,
+      "seconds": 0.8
+    },
+    {
+      "file": "sfx/pop.m4a",
+      "title": "Pop",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "efeito",
+      "mood": "destaque",
+      "bpm": null,
+      "isSfx": true,
+      "seconds": 0.25
+    },
+    {
+      "file": "sfx/click.m4a",
+      "title": "Clique",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "efeito",
+      "mood": "interface",
+      "bpm": null,
+      "isSfx": true,
+      "seconds": 0.08
+    },
+    {
+      "file": "sfx/riser.m4a",
+      "title": "Subida",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "efeito",
+      "mood": "tensão",
+      "bpm": null,
+      "isSfx": true,
+      "seconds": 3
+    },
+    {
+      "file": "sfx/impacto.m4a",
+      "title": "Impacto",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "efeito",
+      "mood": "drama",
+      "bpm": null,
+      "isSfx": true,
+      "seconds": 1.5
+    },
+    {
+      "file": "sfx/ding.m4a",
+      "title": "Ding",
+      "artist": "Orion Studio (síntese procedural)",
+      "genre": "efeito",
+      "mood": "notificação",
+      "bpm": null,
+      "isSfx": true,
+      "seconds": 1.2
+    }
+  ]
+}
