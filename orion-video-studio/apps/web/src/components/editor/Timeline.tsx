@@ -258,11 +258,11 @@ export function Timeline() {
   const draggedClip = drag ? clipsById.get(drag.clipId) : null
 
   return (
-    <section aria-label="Timeline" className="flex flex-col h-full min-h-0 bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+    <section aria-label="Linha do tempo" className="flex flex-col h-full min-h-0 bg-[var(--color-surface)] border-t border-[var(--color-border)]">
       <div className="flex items-center gap-3 px-3 h-9 border-b border-[var(--color-border)] text-[12px]">
         <label className="flex items-center gap-2 text-[var(--color-muted)]">
           Zoom
-          <input type="range" className="orion-range w-28" min={4} max={400} step={1} value={pxPerSec} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom da timeline" />
+          <input type="range" className="orion-range w-28" min={4} max={400} step={1} value={pxPerSec} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom da linha do tempo" />
         </label>
         <span className="text-[var(--color-muted)]">Duração: {formatClock(total)}</span>
         <div className="ml-auto flex items-center gap-1">

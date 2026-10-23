@@ -12,12 +12,12 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@prisma/client": "7.10.0",
-    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.1",
+    "@prisma/adapter-pg": "7.10.1",
     "pg": "8.23.1"
   },
   "devDependencies": {
-    "prisma": "7.10.0",
+    "prisma": "7.10.1",
     "@types/pg": "8.23.1",
     "dotenv": "18.0.6"
   }

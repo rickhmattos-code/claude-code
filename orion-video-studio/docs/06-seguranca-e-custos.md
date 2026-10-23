@@ -27,3 +27,7 @@
 - Sem antivírus em uploads; a mitigação é restringir formatos e protocolos e processar em contêiner sem privilégios.
 - As URLs assinadas do driver local são portadoras (quem tem a URL acessa até expirar, em 1 h), o mesmo modelo das URLs pré-assinadas do S3.
 - A assinatura do webhook é calculada sobre o JSON reserializado. Provedores que assinam o corpo bruto exigem um adapter específico.
+
+## Dependências (atualizado em 23/10/2026)
+
+`npm audit` acusou falhas em `next` ≤ 16.4.0 (duas críticas, de execução remota de código, e uma alta, de negação de serviço: GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr, GHSA-p3m5-59mp-jv5r), em `fastify` 5.12.5 (baixa) e em `prisma` 7.10.0 (dependências da CLI). Todas foram atualizadas para versões de correção sem quebra: **next 16.4.3, fastify 5.12.7, prisma/@prisma/* 7.10.1**. Restam avisos apenas na cadeia do `s3rver`, um servidor S3 usado só nos testes (ver `08-pendencias.md`).

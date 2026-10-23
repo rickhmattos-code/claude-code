@@ -26,12 +26,30 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
     throw new ApiError(0, 'network', 'Sem conexão com o servidor. Verifique sua rede e tente novamente.')
   }
   const text = await res.text()
-  const json = text ? (JSON.parse(text) as unknown) : null
+  let json: unknown = null
+  try {
+    json = text ? JSON.parse(text) : null
+  } catch {
+    // resposta que não é JSON (ex.: página de erro de um proxy): nunca mostra o texto cru
+    throw new ApiError(res.status, 'invalid_response', res.ok ? 'Resposta inesperada do servidor.' : fallbackMessage(res.status))
+  }
   if (!res.ok) {
     const e = (json as { error?: { code?: string; message?: string; details?: unknown } } | null)?.error
-    throw new ApiError(res.status, e?.code ?? 'http_error', e?.message ?? `Erro ${res.status}`, e?.details)
+    throw new ApiError(res.status, e?.code ?? 'http_error', e?.message ?? fallbackMessage(res.status), e?.details)
   }
   return json as T
+}
+
+/** Mensagem em pt-BR quando o servidor não envia uma. */
+export function fallbackMessage(status: number): string {
+  if (status === 401) return 'Sessão expirada. Entre novamente.'
+  if (status === 403) return 'Acesso negado.'
+  if (status === 404) return 'Não encontrado.'
+  if (status === 413) return 'Arquivo grande demais.'
+  if (status === 429) return 'Muitas requisições. Aguarde alguns segundos e tente novamente.'
+  if (status === 502 || status === 503 || status === 504) return 'Servidor indisponível no momento. Tente novamente em instantes.'
+  if (status >= 500) return 'Erro no servidor. Tente novamente; se persistir, contate o suporte.'
+  return `Não foi possível concluir a operação (erro ${status}).`
 }
 
 export function errorMessage(err: unknown): string {

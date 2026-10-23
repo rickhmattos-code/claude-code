@@ -73,3 +73,17 @@ describe('driver S3 (contra s3rver local)', () => {
     expect((await st.head('ws/1/up.txt'))?.size).toBe(12)
   })
 })
+
+describe('mensagens de erro para o usuário (pt-BR)', () => {
+  test('erros de sistema, armazenamento e banco viram frases em português com o detalhe técnico', async () => {
+    const { userFacingError } = await import('../src/index.ts')
+    expect(userFacingError(Object.assign(new Error('ENOSPC: no space left on device, write'), { code: 'ENOSPC' }))).toBe('Sem espaço em disco no servidor de processamento. Detalhes técnicos: ENOSPC.')
+    expect(userFacingError(Object.assign(new Error('The specified key does not exist.'), { name: 'NoSuchKey' }))).toMatch(/^O arquivo não existe mais no armazenamento\./)
+    expect(userFacingError(Object.assign(new Error('Record to update not found.'), { code: 'P2025' }))).toBe('Erro no banco de dados. Detalhes técnicos: P2025.')
+  })
+  test('mensagens já em português passam intactas; o resto ganha frase em português', async () => {
+    const { userFacingError } = await import('../src/index.ts')
+    expect(userFacingError(new Error('Projeto inválido: trilha sem clipes'))).toBe('Projeto inválido: trilha sem clipes')
+    expect(userFacingError(new Error('Cannot read properties of undefined'))).toBe('Erro inesperado no processamento. Detalhes técnicos: Cannot read properties of undefined')
+  })
+})

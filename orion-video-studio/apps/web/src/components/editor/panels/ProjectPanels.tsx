@@ -15,12 +15,12 @@ export function TemplatesPanel() {
   const toast = useToast()
   const fields = new Map<string, string>()
   for (const t of doc.tracks) for (const c of t.clips) if (c.type === 'text' && c.field && !fields.has(c.field)) fields.set(c.field, c.text)
-  const [slug, setSlug] = useState(name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'meu-template')
+  const [slug, setSlug] = useState(name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'meu-modelo')
   async function saveAsTemplate() {
     try {
       const def = templateFromDocument(doc, { slug, name, description: `Criado a partir do projeto “${name}”.` })
       const r = await api<{ version: number }>(`/workspaces/${workspaceId}/templates`, { body: { definition: def } })
-      toast(`Template salvo (versão ${r.version}).`, 'ok')
+      toast(`Modelo salvo (versão ${r.version}).`, 'ok')
     } catch (err) {
       toast(errorMessage(err), 'danger')
     }
@@ -29,10 +29,10 @@ export function TemplatesPanel() {
     <div className="p-3 flex flex-col gap-3 text-sm">
       {doc.meta.templateSlug ? (
         <p className="text-[12px] text-[var(--color-muted)]">
-          Template: <Badge>{doc.meta.templateSlug} v{doc.meta.templateVersion}</Badge>
+          Modelo: <Badge>{doc.meta.templateSlug} v{doc.meta.templateVersion}</Badge>
         </p>
       ) : (
-        <p className="text-[12px] text-[var(--color-muted)]">Projeto livre. Para começar de um template, use a Galeria de templates na tela inicial.</p>
+        <p className="text-[12px] text-[var(--color-muted)]">Projeto livre. Para começar de um modelo, use a página Modelos no menu.</p>
       )}
       {fields.size > 0 && (
         <section className="flex flex-col gap-2">
@@ -45,12 +45,12 @@ export function TemplatesPanel() {
         </section>
       )}
       <section className="rounded-lg border border-[var(--color-border)] p-3 flex flex-col gap-2">
-        <h3 className="font-medium">Salvar este projeto como template</h3>
+        <h3 className="font-medium">Salvar este projeto como modelo</h3>
         <Field label="Identificador" htmlFor="tslug" hint="Letras minúsculas, números e hífens. Salvar de novo cria uma nova versão.">
           <Input id="tslug" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} />
         </Field>
         <Button onClick={saveAsTemplate} disabled={slug.length < 2}>
-          Salvar template
+          Salvar modelo
         </Button>
       </section>
     </div>

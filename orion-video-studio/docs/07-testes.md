@@ -19,13 +19,15 @@ Serviços pagos usam **mocks** nos testes automatizados (fetch simulado nos cont
 
 | Suíte | Resultado |
 |---|---|
-| Timeline + cortes globais | **40/40** ✅ |
+| Timeline + cortes globais | **41/41** ✅ |
 | Provedores (inclui tradução) | **15/15** ✅ |
-| Armazenamento | **7/7** ✅ |
+| Armazenamento + mensagens de erro | **9/9** ✅ |
 | Mídia e renderização (inclui máscaras) | **8/8** ✅ |
-| Integração (inclui corte curto e tradução) | **26/26** ✅ (≈ 3,5 min) |
+| Integração (inclui corte curto, tradução e erros em português) | **27/27** ✅ (≈ 3,5 min) |
+| Idioma da interface (`apps/web/test/ui-language.test.ts`) | **1/1** ✅ |
 | Exportações longas | ✅ 5 e 15 min (22/10) · ✅ 4K 2 min (23/10) |
-| E2E Playwright **contra a stack Docker Compose** (postgres, redis, api, worker, web em contêineres) | **8/8** ✅ (≈ 1,4 min) |
+| E2E Playwright **contra a stack Docker Compose** (postgres, redis, api, worker, web em contêineres) | **8/8** ✅ (≈ 1,4 min, 23/10) |
+| E2E Playwright com o build local após a revisão de idioma | **9/9** ✅ (inclui redirecionamento `/templates` → `/modelos`, 404 em pt-BR e `lang="pt-BR"`) |
 | Typecheck (`npm run typecheck`, todos os workspaces) | **0 erros** ✅ |
 | Build das imagens (`infra/build-images.sh`, inclui `next build`) | ✅ |
 

@@ -2,7 +2,7 @@ import { mkdir, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Asset } from '@orion/db'
 import { ALLOWED_FORMATS, computePeaks, detectSilence, extractAudio, extractFrame, makeProxy, makeThumbnail, probeFile, reverseSegment, type MediaInfo } from '@orion/media'
-import { type MediaJob, objectKey } from '@orion/server'
+import { type MediaJob, objectKey, userFacingError } from '@orion/server'
 import type { WorkerContext } from '../context.ts'
 
 /**
@@ -85,7 +85,7 @@ export async function runMediaJob(ctx: WorkerContext, job: MediaJob, attempt: nu
       if (job.type === 'ingest') await ingest(ctx, asset, dir)
       else await derive(ctx, asset, job, dir)
     } catch (err) {
-      const msg = (err as Error).message
+      const msg = userFacingError(err)
       if (attempt + 1 >= maxAttempts || /não permitido|não corresponde|inválid/.test(msg)) {
         await fail(ctx, asset.id, msg.slice(0, 500))
         return
@@ -141,6 +141,6 @@ async function silence(ctx: WorkerContext, job: Extract<MediaJob, { type: 'silen
     const intervals = await detectSilence(src, meta.noiseDb ?? -35, meta.minSeconds ?? 0.6, { timeoutMs: 20 * 60_000 })
     await ctx.redis.set(key, JSON.stringify({ ...meta, status: 'succeeded', assetId: asset.id, intervals }), 'EX', 3600)
   } catch (err) {
-    await ctx.redis.set(key, JSON.stringify({ ...meta, status: 'failed', error: (err as Error).message.slice(0, 300) }), 'EX', 3600)
+    await ctx.redis.set(key, JSON.stringify({ ...meta, status: 'failed', error: userFacingError(err).slice(0, 300) }), 'EX', 3600)
   }
 }

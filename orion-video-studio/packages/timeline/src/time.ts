@@ -135,13 +135,13 @@ export function formatTimecode(flicks: number, fps: FrameRate): string {
   return `${p(hh)}:${p(mm)}:${p(ss)}:${p(ff)}`
 }
 
-/** mm:ss.d para exibição compacta (baseado no tempo real). */
+/** m:ss,d para exibição compacta em pt-BR (vírgula decimal; baseado no tempo real). */
 export function formatClock(flicks: number): string {
   const tenths = Number(divRound(BigInt(flicks) * 10n, F, 'floor'))
   const m = Math.floor(tenths / 600)
   const s = Math.floor((tenths % 600) / 10)
   const d = tenths % 10
-  return `${m}:${String(s).padStart(2, '0')}.${d}`
+  return `${m}:${String(s).padStart(2, '0')},${d}`
 }
 
 /** Formato SRT: HH:MM:SS,mmm  | VTT: HH:MM:SS.mmm */

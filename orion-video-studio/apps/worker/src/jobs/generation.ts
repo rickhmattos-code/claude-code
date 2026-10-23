@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises'
 import { type GenerationJob, Prisma } from '@orion/db'
 import { probeFile, runFfmpeg } from '@orion/media'
 import { ProviderError, findImage, findTranscription, findTts, findVideo, pricingFor } from '@orion/providers'
-import { objectKey } from '@orion/server'
+import { objectKey, userFacingError } from '@orion/server'
 import type { CaptionSegment, GenerationRequest } from '@orion/shared'
 import { captionsFromCharAlignment, newId, secondsToFlicks, wordsToSegments } from '@orion/timeline'
 import type { WorkerContext } from '../context.ts'
@@ -94,10 +94,10 @@ export async function runGenerationJob(ctx: WorkerContext, data: { generationJob
     // falha de rede/timeout em chamada síncrona é ambígua (pode ter sido cobrada)
     const safeToRetry = err instanceof ProviderError && err.retryable && (job.kind === 'VIDEO' || err.httpStatus !== undefined)
     if (safeToRetry && attempt + 1 < maxAttempts) {
-      if (job.kind !== 'VIDEO') await ctx.db.generationJob.update({ where: { id: job.id }, data: { result: Prisma.DbNull, status: 'queued', error: (err as Error).message } })
+      if (job.kind !== 'VIDEO') await ctx.db.generationJob.update({ where: { id: job.id }, data: { result: Prisma.DbNull, status: 'queued', error: userFacingError(err) } })
       throw err
     }
-    await markFailed(ctx, job, err instanceof ProviderError ? `${err.message}` : `Erro: ${(err as Error).message}`)
+    await markFailed(ctx, job, err instanceof ProviderError ? err.message : userFacingError(err))
   } finally {
     await rm(dir, { recursive: true, force: true })
   }

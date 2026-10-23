@@ -49,13 +49,13 @@ export function registerProjects(app: FastifyInstance, deps: Deps) {
     })
   })
 
-  route(app, deps, { method: 'POST', url: '/api/workspaces/:ws/projects', summary: 'Criar projeto (vazio ou a partir de template)', tag: 'projects', body: CreateProjectBody }, async ({ user, params, body, req }) => {
+  route(app, deps, { method: 'POST', url: '/api/workspaces/:ws/projects', summary: 'Criar projeto (vazio ou a partir de modelo)', tag: 'projects', body: CreateProjectBody }, async ({ user, params, body, req }) => {
     await requireMember(deps, user.id, params.ws!, 'EDITOR')
     let doc: TimelineDoc
     const settings = { aspect: body.aspect, ...(body.width ? { width: body.width } : {}), ...(body.height ? { height: body.height } : {}), ...(body.fps ? { fps: body.fps } : {}) }
     if (body.templateId) {
       const t = await deps.db.template.findFirst({ where: { id: body.templateId, OR: [{ workspaceId: null }, { workspaceId: params.ws! }] } })
-      if (!t) throw notFound('Template')
+      if (!t) throw notFound('Modelo')
       doc = applyTemplate({ template: TemplateDefinition.parse(t.definition), settings, textValues: body.fieldValues })
     } else {
       doc = createDocument(settings)
@@ -108,7 +108,7 @@ export function registerProjects(app: FastifyInstance, deps: Deps) {
     const { doc, issues } = validateDoc(body.document, { maxDurationSeconds: deps.config.MAX_PROJECT_SECONDS })
     if (!doc) throw new HttpError(400, 'invalid_document', 'Documento inválido.', issues)
     const foreign = await assertAssetsInWorkspace(deps.db, p.workspaceId, doc)
-    if (foreign.length) throw new HttpError(400, 'foreign_assets', 'O projeto referencia mídias que não pertencem a este workspace.', foreign)
+    if (foreign.length) throw new HttpError(400, 'foreign_assets', 'O projeto referencia mídias que não pertencem a este espaço de trabalho.', foreign)
     const newVersion = body.baseVersion + 1
     const result = await deps.db.$transaction(async (tx) => {
       const upd = await tx.project.updateMany({
@@ -163,14 +163,14 @@ export function registerProjects(app: FastifyInstance, deps: Deps) {
   route(app, deps, { method: 'GET', url: '/api/projects/:id/revisions/:revId', summary: 'Ler versão', tag: 'projects' }, async ({ user, params }) => {
     const p = await loadProject(deps, user.id, params.id!)
     const rev = await deps.db.projectRevision.findFirst({ where: { id: params.revId!, projectId: p.id } })
-    if (!rev) throw notFound('Versão')
+    if (!rev) throw notFound('Versão', 'f')
     return { id: rev.id, number: rev.number, reason: rev.reason, document: rev.document, createdAt: rev.createdAt.toISOString() }
   })
 
   route(app, deps, { method: 'POST', url: '/api/projects/:id/revisions/:revId/restore', summary: 'Restaurar versão', tag: 'projects' }, async ({ user, params }) => {
     const p = await loadProject(deps, user.id, params.id!, 'EDITOR')
     const rev = await deps.db.projectRevision.findFirst({ where: { id: params.revId!, projectId: p.id } })
-    if (!rev) throw notFound('Versão')
+    if (!rev) throw notFound('Versão', 'f')
     const doc = rev.document as unknown as TimelineDoc
     const newVersion = p.docVersion + 1
     await deps.db.$transaction(async (tx) => {

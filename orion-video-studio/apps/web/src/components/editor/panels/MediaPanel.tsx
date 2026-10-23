@@ -87,7 +87,7 @@ export function MediaPanel() {
         <Recorder onDone={(f) => handleFiles([f], 'RECORDING')} />
         <input ref={fileRef} type="file" multiple hidden accept="video/*,audio/*,image/png,image/jpeg,image/webp" onChange={(e) => e.target.files && handleFiles(e.target.files)} aria-label="Selecionar arquivos" />
       </div>
-      <p className="text-[12px] text-[var(--color-muted)]">Arraste arquivos para cá. Arquivos grandes são enviados em partes direto ao armazenamento. Arraste da lista para a timeline.</p>
+      <p className="text-[12px] text-[var(--color-muted)]">Arraste arquivos para cá. Arquivos grandes são enviados em partes direto ao armazenamento. Arraste da lista para a linha do tempo.</p>
       {uploads.map((u) => (
         <ProgressBar key={u.name} value={u.progress} label={`${u.stage}: ${u.name}`} />
       ))}

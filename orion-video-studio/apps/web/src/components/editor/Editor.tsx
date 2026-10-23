@@ -256,7 +256,7 @@ export function Editor({ projectId }: { projectId: string }) {
     { id: 'captions', label: 'Legendas', icon: <Captions size={14} /> },
     { id: 'voice', label: 'Voz', icon: <Mic size={14} /> },
     { id: 'ai', label: 'Cenas IA', icon: <Wand2 size={14} /> },
-    { id: 'templates', label: 'Templates', icon: <LayoutTemplate size={14} /> },
+    { id: 'templates', label: 'Modelos', icon: <LayoutTemplate size={14} /> },
     { id: 'brand', label: 'Marca', icon: <Palette size={14} /> },
     { id: 'assistant', label: 'Assistente', icon: <Sparkles size={14} /> },
   ]
@@ -284,8 +284,8 @@ export function Editor({ projectId }: { projectId: string }) {
       <ToolButton label="Dividir" shortcut="S" icon={<Scissors size={16} />} disabled={!sel.length} onClick={() => sel.forEach((id) => st.apply((x) => splitClip(x, id, st.playhead)))} />
       <ToolButton label="Duplicar" shortcut="Ctrl+D" icon={<Copy size={16} />} disabled={sel.length !== 1} onClick={() => st.apply((x) => duplicateClip(x, sel[0]!).doc)} />
       <ToolButton label="Excluir" shortcut="Del" icon={<Trash2 size={16} />} disabled={!sel.length} onClick={() => { st.apply((x) => deleteClips(x, sel, false)); st.select([]) }} />
-      <ToolButton label="Ripple" shortcut="Shift+Del" icon={<Trash2 size={16} className="text-[var(--color-accent)]" />} disabled={!sel.length} onClick={() => { st.apply((x) => deleteClips(x, sel, true)); st.select([]) }} />
-      <ToolButton label="Imã" icon={<Magnet size={16} />} active={st.snap} onClick={st.toggleSnap} />
+      <ToolButton label="Fechar espaço" shortcut="Shift+Del" icon={<Trash2 size={16} className="text-[var(--color-accent)]" />} disabled={!sel.length} onClick={() => { st.apply((x) => deleteClips(x, sel, true)); st.select([]) }} />
+      <ToolButton label="Ímã" icon={<Magnet size={16} />} active={st.snap} onClick={st.toggleSnap} />
       <ToolButton label="Marcador" shortcut="M" icon={<Bookmark size={16} />} onClick={() => st.apply((x) => addMarker(x, st.playhead))} />
     </div>
   )
@@ -358,7 +358,7 @@ export function Editor({ projectId }: { projectId: string }) {
           )}
         </div>
         <nav aria-label="Áreas do editor" className="grid grid-cols-3 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-          {([['panel', 'Recursos'], ['timeline', 'Timeline'], ['inspector', 'Propriedades']] as const).map(([v, label]) => (
+          {([['panel', 'Recursos'], ['timeline', 'Linha do tempo'], ['inspector', 'Propriedades']] as const).map(([v, label]) => (
             <button key={v} aria-pressed={mobileView === v} onClick={() => setMobileView(v)} className={`h-12 text-[13px] ${mobileView === v ? 'text-[var(--color-accent)] font-medium' : 'text-[var(--color-muted)]'}`}>
               {label}
             </button>

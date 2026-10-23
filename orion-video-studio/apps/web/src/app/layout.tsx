@@ -4,7 +4,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Orion Video Studio',
-  description: 'Edição de vídeo com timeline, templates, narração, legendas e cenas por IA.',
+  description: 'Edição de vídeo com linha do tempo, modelos, narração, legendas e cenas por IA.',
 }
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0e0f12' }

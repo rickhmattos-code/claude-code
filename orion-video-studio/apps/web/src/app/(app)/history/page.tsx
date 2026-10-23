@@ -33,7 +33,7 @@ export default function HistoryPage() {
         renders === null ? <Spinner /> : (
           <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
             <table className="w-full text-sm">
-              <thead className="bg-[var(--color-surface)] text-left text-[12px] text-[var(--color-muted)]"><tr><th className="p-3">Projeto</th><th className="p-3">Status</th><th className="p-3">Preset</th><th className="p-3">Criada</th><th className="p-3">Detalhe</th><th className="p-3"><span className="sr-only">Ações</span></th></tr></thead>
+              <thead className="bg-[var(--color-surface)] text-left text-[12px] text-[var(--color-muted)]"><tr><th className="p-3">Projeto</th><th className="p-3">Situação</th><th className="p-3">Configuração</th><th className="p-3">Criada</th><th className="p-3">Detalhe</th><th className="p-3"><span className="sr-only">Ações</span></th></tr></thead>
               <tbody>
                 {renders.map((r) => (
                   <tr key={r.id} className="border-t border-[var(--color-border)]">
@@ -52,7 +52,7 @@ export default function HistoryPage() {
       ) : gens === null ? <Spinner /> : (
         <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
           <table className="w-full text-sm">
-            <thead className="bg-[var(--color-surface)] text-left text-[12px] text-[var(--color-muted)]"><tr><th className="p-3">Tipo</th><th className="p-3">Provedor / modelo</th><th className="p-3">Status</th><th className="p-3">Custo estimado</th><th className="p-3">Custo confirmado</th><th className="p-3">Quando</th></tr></thead>
+            <thead className="bg-[var(--color-surface)] text-left text-[12px] text-[var(--color-muted)]"><tr><th className="p-3">Tipo</th><th className="p-3">Provedor / modelo</th><th className="p-3">Situação</th><th className="p-3">Custo estimado</th><th className="p-3">Custo confirmado</th><th className="p-3">Quando</th></tr></thead>
             <tbody>
               {gens.map((g) => (
                 <tr key={g.id} className="border-t border-[var(--color-border)]">

@@ -100,7 +100,7 @@ export default function VoicesPage() {
                 {catalog.map((v) => <option key={v.id} value={v.id}>{v.name}{v.language ? ` (${v.language})` : ''}</option>)}
               </Select>
             </Field>
-            <Slider label="Velocidade" value={form.speed} min={adapter.models[0]!.speedRange[0]} max={adapter.models[0]!.speedRange[1]} step={0.05} format={(v) => `${v.toFixed(2)}×`} onChange={(v) => setForm({ ...form, speed: v })} />
+            <Slider label="Velocidade" value={form.speed} min={adapter.models[0]!.speedRange[0]} max={adapter.models[0]!.speedRange[1]} step={0.05} format={(v) => `${v.toFixed(2).replace('.', ',')}×`} onChange={(v) => setForm({ ...form, speed: v })} />
             <Field label="Trecho para prévia" htmlFor="ph"><TextArea id="ph" value={phrase} onChange={(e) => setPhrase(e.target.value)} /></Field>
             <Button icon={<Play size={14} />} loading={busy} onClick={preview}>Ouvir prévia (custo estimado antes)</Button>
             {previewUrl && <audio src={previewUrl} controls className="w-full" aria-label="Prévia da voz" />}

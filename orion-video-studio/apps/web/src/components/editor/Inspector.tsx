@@ -141,7 +141,7 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
         {asset && (
           <div className="flex flex-wrap gap-1">
             <Badge>{asset.width && asset.height ? `${asset.width}×${asset.height}` : asset.kind}</Badge>
-            {asset.variableFrameRate && <Badge tone="warn">VFR normalizado na exportação</Badge>}
+            {asset.variableFrameRate && <Badge tone="warn">Taxa de quadros variável (normalizada na exportação)</Badge>}
             {asset.rotation ? <Badge tone="info">Rotação {asset.rotation}° aplicada</Badge> : null}
           </div>
         )}
@@ -160,8 +160,8 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
       )}
 
       {clip.type !== 'audio' && (
-        <Section title="Transformação e keyframes">
-          {!inside && <p className="text-[12px] text-[var(--color-muted)]">Posicione o cursor sobre o clipe para criar keyframes.</p>}
+        <Section title="Transformação e quadros-chave">
+          {!inside && <p className="text-[12px] text-[var(--color-muted)]">Posicione o cursor sobre o clipe para criar quadros-chave.</p>}
           {PROPS.map((p) => {
             const pw = keyframePiecewise(clip, p.key)
             const hasKf = clip.keyframes.some((k) => k.property === p.key)
@@ -186,11 +186,11 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
                 <button
                   className={`mb-0.5 inline-flex items-center gap-1 h-7 px-1.5 rounded text-[11px] border ${kfHere ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-muted)]'}`}
                   disabled={!inside || trackLocked}
-                  aria-label={kfHere ? `Remover keyframe de ${p.label}` : `Adicionar keyframe de ${p.label} no cursor`}
-                  title={kfHere ? 'Remover keyframe' : 'Adicionar keyframe no cursor'}
+                  aria-label={kfHere ? `Remover quadro-chave de ${p.label}` : `Adicionar quadro-chave de ${p.label} no cursor`}
+                  title={kfHere ? 'Remover quadro-chave' : 'Adicionar quadro-chave no cursor'}
                   onClick={() => (kfHere ? apply((d) => removeKeyframe(d, clip.id, kfHere.id)) : apply((d) => setKeyframe(d, clip.id, p.key, local, value)))}
                 >
-                  <Diamond size={12} fill={kfHere ? 'currentColor' : 'none'} /> KF
+                  <Diamond size={12} fill={kfHere ? 'currentColor' : 'none'} /> Chave
                 </button>
               </div>
             )
@@ -205,10 +205,10 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
               </Field>
               <div className="flex items-end gap-1">
                 <Button size="sm" icon={<ZoomIn size={14} />} onClick={() => apply((d) => applyZoom(d, clip.id, 'in'))}>
-                  Zoom in
+                  Aproximar (zoom)
                 </Button>
                 <Button size="sm" icon={<ZoomOut size={14} />} onClick={() => apply((d) => applyZoom(d, clip.id, 'out'))}>
-                  Zoom out
+                  Afastar (zoom)
                 </Button>
               </div>
             </div>
@@ -226,8 +226,8 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
                 }
               >
                 <option value="none">Corte seco</option>
-                <option value="fade">Fade</option>
-                <option value="dissolve">Dissolve</option>
+                <option value="fade">Esmaecer</option>
+                <option value="dissolve">Dissolver</option>
               </Select>
               {clip.transitionIn && (
                 <Input
@@ -250,10 +250,10 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
         <Section title="Áudio e velocidade">
           <Slider label="Volume" value={clip.volume} min={0} max={2} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => up((c) => void ('volume' in c && (c.volume = v)), 'vol')} />
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Fade in (s)" htmlFor="fi">
+            <Field label="Entrada gradual (s)" htmlFor="fi">
               <Input id="fi" type="number" min={0} max={10} step={0.1} value={(clip.fadeIn / FLICKS_PER_SECOND).toFixed(1)} onChange={(e) => up((c) => void ('fadeIn' in c && (c.fadeIn = Math.min(c.duration, quantize(secondsToFlicks(Number(e.target.value) || 0), fps)))))} />
             </Field>
-            <Field label="Fade out (s)" htmlFor="fo">
+            <Field label="Saída gradual (s)" htmlFor="fo">
               <Input id="fo" type="number" min={0} max={10} step={0.1} value={(clip.fadeOut / FLICKS_PER_SECOND).toFixed(1)} onChange={(e) => up((c) => void ('fadeOut' in c && (c.fadeOut = Math.min(c.duration, quantize(secondsToFlicks(Number(e.target.value) || 0), fps)))))} />
             </Field>
           </div>
@@ -397,7 +397,7 @@ function TextSection({ clip, up }: { clip: Extract<Clip, { type: 'text' }>; up: 
   const setStyle = (patch: Partial<TextStyle>, key: string) => up((c) => void (c.type === 'text' && Object.assign(c.style, patch)), `st:${key}`)
   return (
     <Section title="Texto">
-      <Field label="Conteúdo" htmlFor="txt" hint={clip.field ? `Campo do template: ${clip.field}` : 'Use Enter para quebrar linha.'}>
+      <Field label="Conteúdo" htmlFor="txt" hint={clip.field ? `Campo do modelo: ${clip.field}` : 'Use Enter para quebrar linha.'}>
         <TextArea id="txt" value={clip.text} maxLength={2000} onChange={(e) => up((c) => void (c.type === 'text' && (c.text = e.target.value || ' ')), 'text')} />
       </Field>
       <div className="grid grid-cols-2 gap-2">
@@ -409,10 +409,10 @@ function TextSection({ clip, up }: { clip: Extract<Clip, { type: 'text' }>; up: 
         </Field>
         <Field label="Peso" htmlFor="fw">
           <Select id="fw" value={st.fontWeight} onChange={(e) => setStyle({ fontWeight: Number(e.target.value) as TextStyle['fontWeight'] }, 'fw')}>
-            <option value={400}>Regular</option>
-            <option value={600}>Semibold</option>
-            <option value={700}>Bold</option>
-            <option value={800}>Extra bold</option>
+            <option value={400}>Normal</option>
+            <option value={600}>Seminegrito</option>
+            <option value={700}>Negrito</option>
+            <option value={800}>Extranegrito</option>
           </Select>
         </Field>
       </div>
@@ -444,9 +444,9 @@ function TextSection({ clip, up }: { clip: Extract<Clip, { type: 'text' }>; up: 
         <Field label="Animação" htmlFor="an">
           <Select id="an" value={clip.animation} onChange={(e) => up((c) => void (c.type === 'text' && (c.animation = e.target.value as typeof clip.animation)))}>
             <option value="none">Nenhuma</option>
-            <option value="fade">Fade</option>
+            <option value="fade">Esmaecer</option>
             <option value="slide-up">Subir</option>
-            <option value="pop">Pop</option>
+            <option value="pop">Saltar</option>
           </Select>
         </Field>
       </div>
@@ -468,10 +468,10 @@ function TrackInspector({ trackId }: { trackId: string }) {
         {track.kind === 'music' && (
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={track.duckUnderVoice} onChange={(e) => apply((d) => setTrackFlags(d, trackId, { duckUnderVoice: e.target.checked }))} />
-            Reduzir automaticamente durante a narração (ducking)
+            Abaixar automaticamente durante a narração
           </label>
         )}
-        <p className="text-[12px] text-[var(--color-muted)]">Solo/mute afetam o áudio; ocultar afeta a imagem. Trilhas bloqueadas não aceitam edição.</p>
+        <p className="text-[12px] text-[var(--color-muted)]">Solo e silenciar afetam o áudio; ocultar afeta a imagem. Trilhas bloqueadas não aceitam edição.</p>
       </Section>
     </div>
   )
@@ -513,13 +513,13 @@ function ProjectInspector() {
           </div>
         )}
         <div className="text-[12px] text-[var(--color-muted)]">
-          {doc.settings.width}×{doc.settings.height} · {(doc.settings.fps.num / doc.settings.fps.den).toFixed(3).replace(/\.?0+$/, '').replace('.', ',')} fps {hasClips && '(frame rate fixo após adicionar clipes)'}
+          {doc.settings.width}×{doc.settings.height} · {(doc.settings.fps.num / doc.settings.fps.den).toFixed(3).replace(/\.?0+$/, '').replace('.', ',')} fps {hasClips && '(taxa de quadros fixa após adicionar clipes)'}
         </div>
         <Field label="Cor de fundo" htmlFor="pbg">
           <Input id="pbg" type="color" value={doc.settings.background.slice(0, 7)} onChange={(e) => setSettings({ background: e.target.value.toUpperCase() })} />
         </Field>
       </Section>
-      <p className="text-[12px] text-[var(--color-muted)] pt-3">Selecione um clipe para editar posição, keyframes, velocidade, efeitos e transições.</p>
+      <p className="text-[12px] text-[var(--color-muted)] pt-3">Selecione um clipe para editar posição, quadros-chave, velocidade, efeitos e transições.</p>
     </div>
   )
 }

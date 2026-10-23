@@ -32,7 +32,7 @@ function grayPixels(png: string): Uint8Array {
 test.describe.serial('fluxo principal do editor', () => {
   let projectUrl = ''
 
-  test('cadastro, projeto, upload, timeline, dividir, salvar e reabrir', async ({ page }) => {
+  test('cadastro, projeto, upload, linha do tempo, dividir, salvar e reabrir', async ({ page }) => {
     await page.goto('/register')
     await page.fill('#name', 'Pessoa E2E')
     await page.fill('#email', email)
@@ -192,15 +192,25 @@ test.describe.serial('fluxo principal do editor', () => {
     await waitSaved(page)
   })
 
-  test('templates: projeto a partir de template com campo preenchido', async ({ page }) => {
+  test('modelos: projeto a partir de modelo com campo preenchido', async ({ page }) => {
     await login(page)
-    await page.goto('/templates')
+    await page.goto('/modelos')
     const card = page.locator('li', { hasText: 'Reflexão Aurora' })
-    await card.getByRole('button', { name: 'Usar template' }).click()
+    await card.getByRole('button', { name: 'Usar modelo' }).click()
     await page.fill('#f-frase', 'Disciplina é liberdade.')
     await page.getByRole('button', { name: 'Criar projeto' }).click()
     await page.waitForURL(/\/projects\//)
     await expect(page.locator('[aria-label="Clipe Disciplina é liberdade."]')).toBeVisible()
+  })
+
+  test('interface em português: endereço antigo redireciona e página inexistente explica em pt-BR', async ({ page }) => {
+    await login(page)
+    await page.goto('/templates')
+    await expect(page).toHaveURL(/\/modelos$/)
+    await expect(page.getByRole('heading', { name: 'Modelos' })).toBeVisible()
+    await page.goto('/pagina-que-nao-existe')
+    await expect(page.getByRole('heading', { name: 'Página não encontrada' })).toBeVisible()
+    expect(await page.locator('html').getAttribute('lang')).toBe('pt-BR')
   })
 
   test('layout móvel mostra preview, barra de ferramentas e áreas alternáveis', async ({ page }) => {

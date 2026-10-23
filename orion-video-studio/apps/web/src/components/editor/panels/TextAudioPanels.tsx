@@ -163,7 +163,7 @@ function TrackVolumes() {
   return (
     <label className="flex items-center gap-2 text-[13px]">
       <input type="checkbox" checked={music.duckUnderVoice} onChange={(e) => apply((d) => ({ ...d, tracks: d.tracks.map((t) => (t.id === music.id ? { ...t, duckUnderVoice: e.target.checked } : t)) }))} />
-      Ducking: baixar a música durante a narração
+      Abaixar a música durante a narração
     </label>
   )
 }

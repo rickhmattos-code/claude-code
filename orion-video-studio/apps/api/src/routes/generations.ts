@@ -44,10 +44,10 @@ async function resolveRequest(deps: Deps, ws: string, req: GenerationRequest): P
       if (req.mode === 'image-to-video' && !req.imageAssetId) throw new HttpError(400, 'image_required', 'Selecione a imagem inicial.')
       if (req.imageAssetId) {
         const img = await deps.db.asset.findFirst({ where: { id: req.imageAssetId, workspaceId: ws, kind: 'IMAGE', status: 'READY', deletedAt: null } })
-        if (!img) throw new HttpError(400, 'image_invalid', 'Imagem inicial não encontrada neste workspace.')
+        if (!img) throw new HttpError(400, 'image_invalid', 'Imagem inicial não encontrada neste espaço de trabalho.')
       }
       const chars = req.characterIds.length ? await deps.db.characterProfile.findMany({ where: { id: { in: req.characterIds }, workspaceId: ws } }) : []
-      if (chars.length !== req.characterIds.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste workspace.')
+      if (chars.length !== req.characterIds.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste espaço de trabalho.')
       const prompt = chars.length ? `${req.prompt}\n\nPersonagens (manter consistência):\n${chars.map(characterPrompt).join('\n')}` : req.prompt
       return { configured: a.status(env).configured, estimate: a.estimate(req.model, req.durationSeconds, pricingFor(env, a.id, req.model)), finalInput: { ...req, prompt: prompt.slice(0, 4000) } }
     }
@@ -56,7 +56,7 @@ async function resolveRequest(deps: Deps, ws: string, req: GenerationRequest): P
       if (!a) throw new HttpError(404, 'provider_not_found', 'Provedor de imagem desconhecido.')
       if (!a.models().some((m) => m.id === req.model)) throw new HttpError(400, 'model_not_found', 'Modelo indisponível.')
       const chars = req.characterIds.length ? await deps.db.characterProfile.findMany({ where: { id: { in: req.characterIds }, workspaceId: ws } }) : []
-      if (chars.length !== req.characterIds.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste workspace.')
+      if (chars.length !== req.characterIds.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste espaço de trabalho.')
       const prompt = chars.length ? `${req.prompt}\n\nPersonagens:\n${chars.map(characterPrompt).join('\n')}` : req.prompt
       return { configured: a.status(env).configured, estimate: a.estimate(req.model, pricingFor(env, a.id, req.model)), finalInput: { ...req, prompt: prompt.slice(0, 4000) } }
     }
@@ -91,9 +91,9 @@ function inputHash(input: Record<string, unknown>): string {
 
 async function loadGeneration(deps: Deps, userId: string, id: string) {
   const g = await deps.db.generationJob.findUnique({ where: { id } })
-  if (!g) throw notFound('Geração')
+  if (!g) throw notFound('Geração', 'f')
   await requireMember(deps, userId, g.workspaceId).catch(() => {
-    throw notFound('Geração')
+    throw notFound('Geração', 'f')
   })
   return g
 }
@@ -141,7 +141,7 @@ export function registerGenerations(app: FastifyInstance, deps: Deps) {
     const spend = await monthlySpend(deps.db, ws)
     const cents = r.estimate.cents ?? 0
     if (spend.confirmed + spend.estimatedPending + cents > workspace.generationBudgetCents) {
-      throw new HttpError(402, 'budget_exceeded', 'Limite mensal de gastos com IA do workspace atingido.')
+      throw new HttpError(402, 'budget_exceeded', 'Limite mensal de gastos com IA do espaço de trabalho atingido.')
     }
     const g = await deps.db.$transaction(async (tx) => {
       const job = await tx.generationJob.create({

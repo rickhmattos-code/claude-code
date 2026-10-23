@@ -9,9 +9,9 @@ import { assetInfoMap, loadProject } from './projects.ts'
 
 async function loadRender(deps: Deps, userId: string, id: string) {
   const r = await deps.db.renderJob.findUnique({ where: { id } })
-  if (!r) throw notFound('Exportação')
+  if (!r) throw notFound('Exportação', 'f')
   await requireMember(deps, userId, r.workspaceId).catch(() => {
-    throw notFound('Exportação')
+    throw notFound('Exportação', 'f')
   })
   return r
 }

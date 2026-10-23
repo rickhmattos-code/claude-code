@@ -50,6 +50,10 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean } = {}): Pro
     reply.header('referrer-policy', 'same-origin')
   })
 
+  app.setNotFoundHandler((req, reply) => {
+    reply.code(404).send({ error: { code: 'route_not_found', message: `Endereço não encontrado: ${req.method} ${req.url.split('?')[0]}` } })
+  })
+
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof HttpError) {
       return reply.code(err.status).send({ error: { code: err.code, message: err.message, details: err.details } })
@@ -60,7 +64,8 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean } = {}): Pro
     const e = err as { statusCode?: number; code?: string; message?: string }
     if (e.statusCode === 429) return reply.code(429).send({ error: { code: 'rate_limited', message: 'Muitas requisições. Aguarde e tente novamente.' } })
     if (e.statusCode && e.statusCode < 500) {
-      return reply.code(e.statusCode).send({ error: { code: e.code ?? 'bad_request', message: e.message ?? 'Requisição inválida.' } })
+      // erros do próprio Fastify vêm em inglês: a mensagem exibida é sempre a nossa
+      return reply.code(e.statusCode).send({ error: { code: e.code ?? 'bad_request', message: clientErrorMessage(e.statusCode, e.code) } })
     }
     req.log.error({ err: { message: e.message, code: e.code } }, 'erro interno')
     return reply.code(500).send({ error: { code: 'internal', message: 'Erro interno. Tente novamente; se persistir, contate o suporte.' } })
@@ -80,4 +85,28 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean } = {}): Pro
   })
   app.get('/api/openapi.json', async () => buildOpenApi())
   return app
+}
+
+/** Mensagem em pt-BR para erros 4xx gerados pelo Fastify e seus plugins. */
+export function clientErrorMessage(status: number, code?: string): string {
+  switch (code) {
+    case 'FST_ERR_CTP_BODY_TOO_LARGE':
+      return 'O conteúdo enviado é grande demais.'
+    case 'FST_ERR_CTP_INVALID_MEDIA_TYPE':
+      return 'Tipo de conteúdo não suportado.'
+    case 'FST_ERR_CTP_EMPTY_JSON_BODY':
+      return 'O corpo da requisição está vazio.'
+    case 'FST_ERR_CTP_INVALID_JSON_BODY':
+    case 'FST_ERR_CTP_INVALID_CONTENT_LENGTH':
+      return 'O corpo da requisição é inválido.'
+    case 'FST_ERR_VALIDATION':
+      return 'Dados inválidos.'
+  }
+  if (status === 401) return 'Sessão expirada ou inválida. Entre novamente.'
+  if (status === 403) return 'Acesso negado.'
+  if (status === 404) return 'Não encontrado.'
+  if (status === 405) return 'Método não permitido.'
+  if (status === 413) return 'O conteúdo enviado é grande demais.'
+  if (status === 415) return 'Tipo de conteúdo não suportado.'
+  return 'Requisição inválida.'
 }

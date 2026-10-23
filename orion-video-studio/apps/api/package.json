@@ -17,7 +17,7 @@
     "@orion/server": "*",
     "@orion/shared": "*",
     "@orion/timeline": "*",
-    "fastify": "5.12.5",
+    "fastify": "5.12.7",
     "zod": "4.6.5",
     "ioredis": "5.11.1"
   }

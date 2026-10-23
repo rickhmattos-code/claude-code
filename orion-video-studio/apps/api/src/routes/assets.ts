@@ -35,10 +35,10 @@ const MIME_BY_EXT: Record<string, string> = {
 
 export async function loadAsset(deps: Deps, userId: string, id: string, min: 'VIEWER' | 'EDITOR' = 'VIEWER') {
   const a = await deps.db.asset.findFirst({ where: { id, deletedAt: null } })
-  if (!a) throw notFound('Mídia')
+  if (!a) throw notFound('Mídia', 'f')
   if (a.source === 'CATALOG') return a
   await requireMember(deps, userId, a.workspaceId, min).catch(() => {
-    throw notFound('Mídia')
+    throw notFound('Mídia', 'f')
   })
   return a
 }
@@ -56,7 +56,7 @@ export function registerAssets(app: FastifyInstance, deps: Deps) {
     const workspace = await deps.db.workspace.findUniqueOrThrow({ where: { id: ws } })
     const used = await deps.db.asset.aggregate({ where: { workspaceId: ws, deletedAt: null }, _sum: { sizeBytes: true } })
     if ((toNum(used._sum.sizeBytes) ?? 0) + body.sizeBytes > Number(workspace.quotaBytes)) {
-      throw new HttpError(413, 'quota_exceeded', 'Cota de armazenamento do workspace atingida. Exclua mídias não usadas ou amplie o plano.')
+      throw new HttpError(413, 'quota_exceeded', 'Cota de armazenamento do espaço de trabalho atingida. Exclua mídias não usadas ou amplie o plano.')
     }
     const assetId = crypto.randomUUID()
     const key = objectKey.upload(ws, assetId, extFor(body.mimeType, body.fileName))
@@ -84,9 +84,9 @@ export function registerAssets(app: FastifyInstance, deps: Deps) {
 
   route(app, deps, { method: 'POST', url: '/api/uploads/:id/complete', summary: 'Concluir upload e iniciar inspeção', tag: 'assets', body: CompleteUploadBody }, async ({ user, params, body, req }) => {
     const up = await deps.db.upload.findUnique({ where: { id: params.id! } })
-    if (!up) throw notFound('Upload')
+    if (!up) throw notFound('Envio')
     await requireMember(deps, user.id, up.workspaceId, 'EDITOR').catch(() => {
-      throw notFound('Upload')
+      throw notFound('Envio')
     })
     if (up.status === 'COMPLETED') return { assetId: up.assetId, status: 'PROCESSING' }
     if (up.status !== 'CREATED' || up.expiresAt < new Date()) throw new HttpError(410, 'upload_expired', 'Upload expirado ou cancelado. Envie novamente.')
@@ -111,9 +111,9 @@ export function registerAssets(app: FastifyInstance, deps: Deps) {
 
   route(app, deps, { method: 'POST', url: '/api/uploads/:id/abort', summary: 'Cancelar upload', tag: 'assets' }, async ({ user, params }) => {
     const up = await deps.db.upload.findUnique({ where: { id: params.id! } })
-    if (!up) throw notFound('Upload')
+    if (!up) throw notFound('Envio')
     await requireMember(deps, user.id, up.workspaceId, 'EDITOR').catch(() => {
-      throw notFound('Upload')
+      throw notFound('Envio')
     })
     if (up.mode === 'MULTIPART' && up.s3UploadId && up.status === 'CREATED') await deps.storage.abortMultipart(up.storageKey, up.s3UploadId).catch(() => undefined)
     await deps.db.$transaction([
@@ -252,10 +252,10 @@ export function registerAssets(app: FastifyInstance, deps: Deps) {
 
   route(app, deps, { method: 'GET', url: '/api/silence/:requestId', summary: 'Resultado da detecção de silêncio', tag: 'assets' }, async ({ user, params }) => {
     const raw = await deps.redis.get(`silence:${params.requestId}`)
-    if (!raw) throw notFound('Análise')
+    if (!raw) throw notFound('Análise', 'f')
     const data = JSON.parse(raw) as { workspaceId: string }
     await requireMember(deps, user.id, data.workspaceId).catch(() => {
-      throw notFound('Análise')
+      throw notFound('Análise', 'f')
     })
     return data
   })

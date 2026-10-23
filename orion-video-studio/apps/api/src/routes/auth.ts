@@ -7,7 +7,7 @@ import { type Deps, HttpError, SESSION_COOKIE, currentUser, hashPassword, requir
 export function registerAuth(app: FastifyInstance, deps: Deps) {
   const strict = { max: 10, timeWindow: '1 minute' }
 
-  route(app, deps, { method: 'POST', url: '/api/auth/register', summary: 'Criar conta (cria workspace pessoal)', tag: 'auth', body: RegisterBody, public: true, rateLimit: strict }, async ({ body, reply, req }) => {
+  route(app, deps, { method: 'POST', url: '/api/auth/register', summary: 'Criar conta (cria espaço de trabalho pessoal)', tag: 'auth', body: RegisterBody, public: true, rateLimit: strict }, async ({ body, reply, req }) => {
     const email = body.email.toLowerCase().trim()
     const exists = await deps.db.user.findUnique({ where: { email } })
     if (exists) throw new HttpError(409, 'email_taken', 'Este e-mail já está cadastrado.')
@@ -42,7 +42,7 @@ export function registerAuth(app: FastifyInstance, deps: Deps) {
     return { ok: true }
   })
 
-  route(app, deps, { method: 'GET', url: '/api/auth/me', summary: 'Usuário atual e workspaces', tag: 'auth', public: true }, async ({ req }) => {
+  route(app, deps, { method: 'GET', url: '/api/auth/me', summary: 'Usuário atual e espaços de trabalho', tag: 'auth', public: true }, async ({ req }) => {
     const user = await currentUser(deps, req)
     if (!user) return { user: null, workspaces: [] }
     const memberships = await deps.db.membership.findMany({ where: { userId: user.id }, include: { workspace: true }, orderBy: { createdAt: 'asc' } })
@@ -55,7 +55,7 @@ export function registerAuth(app: FastifyInstance, deps: Deps) {
   route(
     app,
     deps,
-    { method: 'POST', url: '/api/workspaces/:ws/members', summary: 'Adicionar membro existente ao workspace', tag: 'auth', body: z.object({ email: z.string().email(), role: z.enum(['EDITOR', 'VIEWER']) }) },
+    { method: 'POST', url: '/api/workspaces/:ws/members', summary: 'Adicionar membro existente ao espaço de trabalho', tag: 'auth', body: z.object({ email: z.string().email(), role: z.enum(['EDITOR', 'VIEWER']) }) },
     async ({ user, params, body, req }) => {
       await requireMember(deps, user.id, params.ws!, 'OWNER')
       const target = await deps.db.user.findUnique({ where: { email: body.email.toLowerCase() } })

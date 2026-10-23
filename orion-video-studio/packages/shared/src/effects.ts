@@ -57,7 +57,7 @@ export const EFFECT_SUPPORT: Record<EffectType, EffectSupport> = {
     notes: 'Ruído temporal; padrão aleatório difere entre prévia e exportação.',
   },
   chromakey: {
-    label: 'Chroma key',
+    label: 'Chroma key (fundo verde/azul)',
     preview: 'approx',
     export: 'ready',
     ffmpeg: 'chromakey',
@@ -84,12 +84,12 @@ export const EFFECT_SUPPORT: Record<EffectType, EffectSupport> = {
 export const TRANSITION_SUPPORT = {
   cut: { label: 'Corte seco', preview: 'exact', export: 'ready' },
   fade: {
-    label: 'Fade (entrada/saída)',
+    label: 'Esmaecer (entrada/saída)',
     preview: 'exact',
     export: 'ready',
   },
   dissolve: {
-    label: 'Dissolve',
+    label: 'Dissolver',
     preview: 'exact',
     export: 'ready',
   },
@@ -97,17 +97,17 @@ export const TRANSITION_SUPPORT = {
 
 export const MOTION_SUPPORT = {
   zoomPan: {
-    label: 'Zoom e pan (keyframes de escala e posição)',
+    label: 'Zoom e deslocamento (quadros-chave de escala e posição)',
     preview: 'exact',
     export: 'ready',
   },
   pip: {
-    label: 'Picture-in-picture (trilha de sobreposição + transformação)',
+    label: 'Imagem sobre imagem (trilha de sobreposição + transformação)',
     preview: 'exact',
     export: 'ready',
   },
   animatedText: {
-    label: 'Texto animado (fade, slide-up, pop)',
+    label: 'Texto animado (esmaecer, subir, saltar)',
     preview: 'exact',
     export: 'ready',
   },
@@ -120,7 +120,7 @@ export const MOTION_SUPPORT = {
 
 export const PLANNED_EFFECTS = [
   {
-    label: 'Máscaras animadas por keyframe e formas livres',
+    label: 'Máscaras animadas por quadro-chave e formas livres',
     phase: 5,
     dependency: 'interpolação da geometria por frame; editor de caminho',
     cost: 'CPU apenas',

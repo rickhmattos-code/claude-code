@@ -86,4 +86,10 @@ As adições foram `packages/server` e `packages/db`. API e worker compartilham 
 
 ## Internacionalização
 
-`packages/shared/src/i18n.ts` define o dicionário pt-BR de referência, idiomas parciais com fallback e `translate()`. A interface usa `useT()` para navegação, autenticação, projetos, estados e provedores. **Pendência:** extrair para o dicionário os textos dos painéis do editor, que ainda estão literais em pt-BR.
+O idioma do produto é **português do Brasil** (`<html lang="pt-BR">`, `locale: 'pt-BR'` fixo na sessão).
+
+- **Vocabulário:** termos estabelecidos no Brasil em vez de anglicismos. Templates → **Modelos** (rota `/modelos`; `/templates` redireciona), timeline → **linha do tempo**, keyframes → **quadros-chave**, fade/dissolve/pop → **esmaecer/dissolver/saltar**, ripple → **fechar espaço**, snap → **ímã**, workspace → **espaço de trabalho**, frame rate → **taxa de quadros**, pesos **normal/seminegrito/negrito/extranegrito**. Siglas e nomes técnicos consagrados ficam como estão (MP4, SRT, BPM, Full HD, chroma key, storyboard).
+- **Números e datas:** vírgula decimal (`0:05,3`, `1,5 s`), `toLocaleString('pt-BR')` para datas e `Intl.NumberFormat('pt-BR')` para valores (`US$ 1.234,50`; os provedores cobram em dólar).
+- **Mensagens de erro:** o Zod usa o locale `ptBR` (configurado em `packages/shared/src/index.ts`); os erros 4xx do Fastify e o 404 de rota têm mensagens próprias (`clientErrorMessage` em `apps/api/src/app.ts`); o cliente nunca mostra o texto cru de uma resposta que não é JSON; falhas do worker passam por `userFacingError` (`packages/server/src/errors.ts`), que traduz erros de sistema, armazenamento e banco e mantém o original como “detalhes técnicos”; o Next tem páginas próprias de 404 e de erro.
+- **Guarda automática:** `apps/web/test/ui-language.test.ts` varre os textos visíveis da interface e falha se um termo em inglês já traduzido reaparecer.
+- **Outros idiomas:** `packages/shared/src/i18n.ts` mantém o dicionário de referência e idiomas parciais com fallback (`translate()`/`useT()` em navegação, autenticação, projetos, estados e provedores). Os textos dos painéis do editor estão escritos direto em pt-BR; para lançar outro idioma, é preciso extraí-los para o dicionário.

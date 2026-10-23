@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { Prisma } from '@orion/db'
 import { toNum } from '@orion/db'
 import { FfmpegError, renderProject, type SourceAsset } from '@orion/media'
-import { objectKey, referencedAssetIds } from '@orion/server'
+import { objectKey, referencedAssetIds, userFacingError } from '@orion/server'
 import { RenderPreset, type TimelineDoc } from '@orion/shared'
 import { validateDoc } from '@orion/timeline'
 import type { WorkerContext } from '../context.ts'
@@ -112,7 +112,8 @@ export async function runRenderJob(ctx: WorkerContext, renderJobId: string, atte
       await rm(workDir, { recursive: true, force: true })
       return
     }
-    const message = err instanceof FfmpegError ? `${err.message}\n${err.stderrTail.split('\n').slice(-6).join('\n')}` : (err as Error).message
+    // a frase em português vem primeiro; a saída do FFmpeg (em inglês) fica como detalhe técnico
+    const message = err instanceof FfmpegError ? `${err.message}\nDetalhes técnicos (FFmpeg):\n${err.stderrTail.split('\n').slice(-6).join('\n')}` : userFacingError(err)
     const final = attempt + 1 >= maxAttempts || /Projeto inválido|Validação do arquivo/.test(message)
     await ctx.db.renderJob.update({ where: { id: job.id }, data: { status: final ? 'failed' : 'queued', error: message.slice(0, 2000), ...(final ? { finishedAt: new Date() } : {}) } })
     ctx.log('render.error', { renderJobId: job.id, final, message: message.slice(0, 300) })

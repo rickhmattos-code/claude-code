@@ -18,7 +18,7 @@ interface TemplateRow {
   definition: TemplateDefinition
 }
 
-const CAT: Record<string, string> = { reflexao: 'Reflexão', vendas: 'Vendas', institucional: 'Institucional', historia: 'História narrada', educativo: 'Educativo', podcast: 'Podcast', depoimento: 'Depoimento', lista: 'Lista', produto: 'Produto', humor: 'Humor', personalizado: 'Meus templates' }
+const CAT: Record<string, string> = { reflexao: 'Reflexão', vendas: 'Vendas', institucional: 'Institucional', historia: 'História narrada', educativo: 'Educativo', podcast: 'Podcast', depoimento: 'Depoimento', lista: 'Lista', produto: 'Produto', humor: 'Humor', personalizado: 'Meus modelos' }
 
 function Storyboard({ def }: { def: TemplateDefinition }) {
   const total = def.scenes.reduce((a, s) => a + s.duration, 0)
@@ -71,7 +71,7 @@ export default function TemplatesPage() {
     <div className="max-w-6xl mx-auto flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Templates</h1>
+          <h1 className="font-display text-2xl font-bold">Modelos</h1>
           <p className="text-sm text-[var(--color-muted)]">Estruturas versionadas com cenas, campos, cores, legendas e regras de duração.</p>
         </div>
         <Select aria-label="Categoria" value={cat} onChange={(e) => setCat(e.target.value)} className="w-56">
@@ -86,7 +86,7 @@ export default function TemplatesPage() {
       {rows === null ? (
         <Spinner />
       ) : shown.length === 0 ? (
-        <Empty title="Nenhum template nesta categoria" />
+        <Empty title="Nenhum modelo nesta categoria" />
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {shown.map((t) => {
@@ -114,17 +114,17 @@ export default function TemplatesPage() {
                 </div>
                 <div className="flex gap-2 mt-auto">
                   <Button variant="primary" className="flex-1" onClick={() => open(t)}>
-                    Usar template
+                    Usar modelo
                   </Button>
                   <Button
                     icon={<Copy size={14} />}
                     aria-label={`Duplicar ${t.name}`}
                     onClick={async () => {
-                      const slug = prompt('Identificador do novo template (letras minúsculas e hífens):', `${t.slug}-copia`)
+                      const slug = prompt('Identificador do novo modelo (letras minúsculas e hífens):', `${t.slug}-copia`)
                       if (!slug) return
                       try {
                         await api(`/templates/${t.id}/duplicate`, { body: { workspaceId: ws.id, slug, name: `${t.name} (cópia)` } })
-                        toast('Template duplicado.', 'ok')
+                        toast('Modelo duplicado.', 'ok')
                         void load()
                       } catch (err) {
                         toast(errorMessage(err), 'danger')
@@ -139,7 +139,7 @@ export default function TemplatesPage() {
                       icon={<Trash2 size={14} />}
                       aria-label={`Excluir ${t.name}`}
                       onClick={async () => {
-                        if (!confirm('Excluir este template e todas as versões?')) return
+                        if (!confirm('Excluir este modelo e todas as versões?')) return
                         await api(`/templates/${t.id}`, { method: 'DELETE' }).catch((e) => toast(errorMessage(e), 'danger'))
                         void load()
                       }}
@@ -185,7 +185,7 @@ export default function TemplatesPage() {
                   <TextArea id={`f-${f.key}`} className="min-h-[44px]" maxLength={f.maxLength} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
                 </Field>
               ))}
-            <p className="text-[12px] text-[var(--color-muted)]">Campos de mídia viram espaços reservados na timeline para você substituir depois.</p>
+            <p className="text-[12px] text-[var(--color-muted)]">Campos de mídia viram espaços reservados na linha do tempo para você substituir depois.</p>
           </div>
         )}
       </Dialog>

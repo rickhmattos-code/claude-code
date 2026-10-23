@@ -100,7 +100,7 @@ export default function AssistantPage() {
         <h1 className="font-display text-2xl font-bold flex items-center gap-2">
           <Sparkles className="text-[var(--color-accent)]" /> Assistente de criação
         </h1>
-        <p className="text-sm text-[var(--color-muted)]">Ideia ou roteiro → aberturas, roteiro, storyboard, trilha e CTA para revisão. Nada pago é executado sem sua aprovação.</p>
+        <p className="text-sm text-[var(--color-muted)]">Ideia ou roteiro → aberturas, roteiro, storyboard, trilha e chamada para ação para revisão. Nada pago é executado sem sua aprovação.</p>
       </header>
       <ol className="flex gap-2 text-[13px]" aria-label="Etapas">
         <li>
@@ -209,7 +209,7 @@ export default function AssistantPage() {
                   <Field label="Narração" htmlFor={`n-${s.key}`}>
                     <TextArea id={`n-${s.key}`} className="min-h-[60px]" value={s.narration} onChange={(e) => setPlan({ ...plan, scenes: plan.scenes.map((x) => (x.key === s.key ? { ...x, narration: e.target.value } : x)) })} />
                   </Field>
-                  <Field label="Prompt visual" htmlFor={`p-${s.key}`}>
+                  <Field label="Descrição visual" htmlFor={`p-${s.key}`}>
                     <TextArea id={`p-${s.key}`} className="min-h-[60px]" value={s.visualPrompt} onChange={(e) => setPlan({ ...plan, scenes: plan.scenes.map((x) => (x.key === s.key ? { ...x, visualPrompt: e.target.value } : x)) })} />
                   </Field>
                 </li>

@@ -41,7 +41,7 @@
   "paths": {
     "/api/auth/register": {
       "post": {
-        "summary": "Criar conta (cria workspace pessoal)",
+        "summary": "Criar conta (cria espaço de trabalho pessoal)",
         "tags": [
           "auth"
         ],
@@ -175,7 +175,7 @@
     },
     "/api/auth/me": {
       "get": {
-        "summary": "Usuário atual e workspaces",
+        "summary": "Usuário atual e espaços de trabalho",
         "tags": [
           "auth"
         ],
@@ -199,7 +199,7 @@
     },
     "/api/workspaces/{ws}/members": {
       "post": {
-        "summary": "Adicionar membro existente ao workspace",
+        "summary": "Adicionar membro existente ao espaço de trabalho",
         "tags": [
           "auth"
         ],
@@ -314,7 +314,7 @@
         ]
       },
       "post": {
-        "summary": "Criar projeto (vazio ou a partir de template)",
+        "summary": "Criar projeto (vazio ou a partir de modelo)",
         "tags": [
           "projects"
         ],
@@ -5609,7 +5609,7 @@
     },
     "/api/templates": {
       "get": {
-        "summary": "Templates do sistema e do workspace (última versão)",
+        "summary": "Modelos do sistema e do espaço de trabalho (última versão)",
         "tags": [
           "templates"
         ],
@@ -5655,7 +5655,7 @@
     },
     "/api/workspaces/{ws}/templates": {
       "post": {
-        "summary": "Salvar template próprio (nova versão se o slug existir)",
+        "summary": "Salvar modelo próprio (nova versão se o slug existir)",
         "tags": [
           "templates"
         ],
@@ -6267,7 +6267,7 @@
     },
     "/api/templates/{id}/duplicate": {
       "post": {
-        "summary": "Duplicar template para o workspace",
+        "summary": "Duplicar modelo para o espaço de trabalho",
         "tags": [
           "templates"
         ],
@@ -6343,7 +6343,7 @@
     },
     "/api/templates/{id}": {
       "delete": {
-        "summary": "Excluir template próprio (todas as versões)",
+        "summary": "Excluir modelo próprio (todas as versões)",
         "tags": [
           "templates"
         ],
@@ -7303,7 +7303,7 @@
     },
     "/api/workspaces/{ws}/voice-profiles": {
       "get": {
-        "summary": "Vozes salvas do workspace",
+        "summary": "Vozes salvas do espaço de trabalho",
         "tags": [
           "voices"
         ],

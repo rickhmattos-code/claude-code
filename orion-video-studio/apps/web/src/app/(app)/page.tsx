@@ -34,7 +34,7 @@ export default function ProjectsPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">{t('nav.projects')}</h1>
-          <p className="text-sm text-[var(--color-muted)]">Edite em timeline, gere cenas e exporte vídeos acima de 60 segundos.</p>
+          <p className="text-sm text-[var(--color-muted)]">Edite na linha do tempo, gere cenas e exporte vídeos acima de 60 segundos.</p>
         </div>
         <div className="flex gap-2">
           <Link href="/assistant">

@@ -137,7 +137,7 @@ export function ScenesPanel() {
               ))}
             </Select>
           </Field>
-          <Field label="Modelo" htmlFor="gm" hint={model?.durations ? `Durações por geração: ${model.durations.join(', ')} s` : undefined}>
+          <Field label="Modelo de IA" htmlFor="gm" hint={model?.durations ? `Durações por geração: ${model.durations.join(', ')} s` : undefined}>
             <Select id="gm" value={model?.id} onChange={(e) => setModelId(e.target.value)}>
               {models.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -149,7 +149,7 @@ export function ScenesPanel() {
         </div>
       )}
       {doc.scenes.length === 0 ? (
-        <p className="text-[12px] text-[var(--color-muted)]">Este projeto não tem storyboard. Use o Assistente para transformar um roteiro em cenas ou aplique um template.</p>
+        <p className="text-[12px] text-[var(--color-muted)]">Este projeto não tem storyboard. Use o Assistente para transformar um roteiro em cenas ou aplique um modelo.</p>
       ) : (
         <>
           <Button
@@ -158,11 +158,11 @@ export function ScenesPanel() {
             onClick={() => {
               const main = doc.tracks.find((t) => t.kind === 'video')!
               const missing = doc.scenes.filter((s) => !main.clips.some((c) => c.sceneKey === s.key))
-              if (!missing.length) return toast('Todas as cenas já estão na timeline.', 'info')
+              if (!missing.length) return toast('Todas as cenas já estão na linha do tempo.', 'info')
               apply((d) => assembleScenes(d, missing, []))
             }}
           >
-            Montar cenas pendentes na timeline
+            Montar cenas pendentes na linha do tempo
           </Button>
           <ol className="flex flex-col gap-2">
             {doc.scenes.map((s, i) => {
@@ -177,7 +177,7 @@ export function ScenesPanel() {
                     <Badge tone={s.status === 'approved' ? 'ok' : 'neutral'}>{s.status === 'approved' ? 'Aprovada' : 'Rascunho'}</Badge>
                     <span className="text-[11px] tabular-nums text-[var(--color-muted)]">~{(s.estimatedDuration / FLICKS_PER_SECOND).toFixed(1).replace('.', ',')} s</span>
                   </div>
-                  <TextArea aria-label={`Prompt visual da cena ${i + 1}`} className="min-h-[60px] text-[12px]" value={s.visualPrompt} onChange={(e) => updateScene(s.key, { visualPrompt: e.target.value })} />
+                  <TextArea aria-label={`Descrição visual da cena ${i + 1}`} className="min-h-[60px] text-[12px]" value={s.visualPrompt} onChange={(e) => updateScene(s.key, { visualPrompt: e.target.value })} />
                   {characters.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {characters.map((c) => (
@@ -227,7 +227,7 @@ export function ScenesPanel() {
                       </div>
                     </div>
                   )}
-                  {clips.length > 1 && <p className="text-[11px] text-[var(--color-muted)]">{clips.length} tomadas na timeline · revise as transições ({clips.map((c) => formatClock(clipEnd(c))).join(', ')})</p>}
+                  {clips.length > 1 && <p className="text-[11px] text-[var(--color-muted)]">{clips.length} tomadas na linha do tempo · revise as transições ({clips.map((c) => formatClock(clipEnd(c))).join(', ')})</p>}
                 </li>
               )
             })}

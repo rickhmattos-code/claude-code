@@ -157,10 +157,10 @@ export function CaptionsPanel() {
             </Field>
             <Field label="Peso" htmlFor="cw">
               <Select id="cw" value={style.fontWeight} onChange={(e) => setStyle({ fontWeight: Number(e.target.value) as CaptionStyle['fontWeight'] })}>
-                <option value={400}>Regular</option>
-                <option value={600}>Semibold</option>
-                <option value={700}>Bold</option>
-                <option value={800}>Extra bold</option>
+                <option value={400}>Normal</option>
+                <option value={600}>Seminegrito</option>
+                <option value={700}>Negrito</option>
+                <option value={800}>Extranegrito</option>
               </Select>
             </Field>
           </div>

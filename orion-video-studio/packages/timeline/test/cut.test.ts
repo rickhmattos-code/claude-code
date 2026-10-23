@@ -11,6 +11,7 @@ import {
   extractRange,
   findFillerWords,
   findPauses,
+  formatClock,
   makeMediaClip,
   makeTextClip,
   normalizeRanges,
@@ -194,5 +195,12 @@ describe('highlight suggestions', () => {
 
   test('no captions → no suggestions (never invents content)', () => {
     expect(suggestHighlights(createDocument())).toEqual([])
+  })
+})
+
+describe('formatos pt-BR', () => {
+  test('relógio compacto usa vírgula decimal', () => {
+    expect(formatClock(S(65.4))).toBe('1:05,4')
+    expect(formatClock(0)).toBe('0:00,0')
   })
 })

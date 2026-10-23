@@ -54,7 +54,7 @@ async function main() {
     await db.musicTrack.create({ data: { workspaceId: null, assetId: asset.id, licenseRecordId: license.id, title: t.title, artist: t.artist, genre: t.genre, mood: t.mood, bpm: t.bpm, isSfx: t.isSfx, durationFlicks: BigInt(info.durationFlicks ?? 0) } })
     await queues.media.add('ingest', { type: 'ingest', assetId: asset.id }, { jobId: `ingest-${asset.id}` })
   }
-  console.log(`catálogo: ${catalog.tracks.length} faixas, ${SYSTEM_TEMPLATES.length} templates`)
+  console.log(`catálogo: ${catalog.tracks.length} faixas, ${SYSTEM_TEMPLATES.length} modelos`)
 
   if (process.env.SEED_DEMO === '1') await demo()
 }

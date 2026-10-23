@@ -1,6 +1,6 @@
 # ORION VIDEO STUDIO
 
-Editor de vídeo em timeline com templates, narração, legendas, biblioteca musical licenciada e cenas por IA. Exporta vídeos **acima de 60 segundos** (validados com 90 s, 5 min e 15 min). Interface em português do Brasil, com arquitetura preparada para outros idiomas.
+Editor de vídeo com linha do tempo, modelos (templates), narração, legendas, biblioteca musical licenciada e cenas por IA. Exporta vídeos **acima de 60 segundos** (validados com 90 s, 5 min e 15 min). Interface, mensagens de erro e formatos (datas, números, moeda) em **português do Brasil**, com arquitetura preparada para outros idiomas.
 
 > Identidade: grafite quente com **Âmbar Betelgeuse** (`#F2A93B`) e **Azul Rigel** (`#7B93FF`), as duas estrelas mais brilhantes de Órion. Logo: o cinturão de três estrelas.
 
@@ -10,7 +10,7 @@ Editor de vídeo em timeline com templates, narração, legendas, biblioteca mus
 |---|---|
 | ✅ **Implementado e testado** | Contas e workspaces · upload direto (URL assinada, multipart) · inspeção ffprobe, miniatura, waveform e proxies · timeline com várias trilhas (cortar, dividir, duplicar, excluir, ripple, imã, zoom, mute/solo/lock/hide, keyframes, velocidade, congelar quadro, inverter, marcadores, áreas seguras) · undo/redo · salvamento automático com concorrência otimista · recuperação após recarregar · histórico de versões · 10 templates versionados + templates próprios · efeitos e transições exportáveis · legendas (editar, dividir, unir, SRT/VTT, estilos, gravadas ou separadas) · biblioteca musical com licenças · ducking · kits de marca em lote · personagens com referências autorizadas · assistente (roteiro → storyboard, 3 aberturas, comandos estruturados com prévia e desfazer) · detecção de silêncio com cortes · exportação MP4 H.264/AAC 720p/1080p/**4K** validada · **edição pelo texto** (apagar palavras/frases, “ãh/hum”, pausas → corte em todas as trilhas) · **cortes curtos** sugeridos a partir de vídeo longo → novo projeto 9:16/1:1/4:5 · **máscaras** retangulares/elípticas com borda suave · recuperação de falha do worker · estimativa e controle de custos · isolamento entre usuários · **Docker Compose validado** |
 | 🟡 **Exige credenciais** (implementado; contrato testado com HTTP simulado; não exercitado contra a API real) | Google Veo (cenas em vídeo) · ElevenLabs (voz pt-BR com tempo por caractere) · OpenAI Images (storyboard) · OpenAI Whisper (transcrição) · Anthropic (roteiro, comandos livres e **tradução de legendas**). Sem chave, aparece “Configuração pendente”; com `PROVIDERS_MOCK=1`, provedores simulados geram mídia real marcada “MODO DE TESTE” |
-| ⏳ **Pendente** | Remoção de fundo · rastreamento · máscaras animadas · reenquadramento inteligente dos cortes curtos · geração musical · extração completa dos textos do editor para o dicionário i18n · imagens Docker enxutas |
+| ⏳ **Pendente** | Remoção de fundo · rastreamento · máscaras animadas · reenquadramento inteligente dos cortes curtos · geração musical · imagens Docker enxutas |
 
 Detalhes em [`docs/08-pendencias.md`](docs/08-pendencias.md).
 
@@ -30,7 +30,7 @@ npm install                               # usa .npmrc (legacy-peer-deps)
 npm run db:generate                       # cliente Prisma
 npm run db:migrate                        # aplica migrations
 npm run fixtures                          # (opcional) regenera fixtures e música demo — já versionadas
-SEED_DEMO=1 npm run db:seed               # catálogo musical, 10 templates, usuário demo e projeto de 90 s
+SEED_DEMO=1 npm run db:seed               # catálogo musical, 10 modelos, usuário demo e projeto de 90 s
 ```
 
 Em três terminais:
@@ -100,4 +100,4 @@ Código: proprietário do projeto (defina antes de distribuir). Fontes Inter: SI
 
 ## Evidências
 
-`docs/evidencias/` traz capturas do editor (desktop e móvel), da galeria de templates, do editor de legendas, da exportação e da página de integrações. Traz também `08-previa-x-exportacao-mascara.png`, com a prévia do navegador ao lado do quadro exportado, com e sem máscara, e **`exemplo-90s-720p.mp4`**, exportado pelo worker a partir do projeto de exemplo e validado: 90,000 s, H.264 + AAC, 720×1280.
+`docs/evidencias/` traz capturas do editor (desktop e móvel), da galeria de modelos, do editor de legendas, da exportação e da página de integrações. Traz também `08-previa-x-exportacao-mascara.png`, com a prévia do navegador ao lado do quadro exportado, com e sem máscara, e **`exemplo-90s-720p.mp4`**, exportado pelo worker a partir do projeto de exemplo e validado: 90,000 s, H.264 + AAC, 720×1280.

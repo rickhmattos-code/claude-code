@@ -84,7 +84,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   apply(fn, opts) {
     const { history, lastCoalesce, notice, role } = get()
     if (role === 'VIEWER') {
-      notice?.('Seu papel é somente leitura neste workspace.', 'danger')
+      notice?.('Seu papel é somente leitura neste espaço de trabalho.', 'danger')
       return false
     }
     let next: TimelineDoc

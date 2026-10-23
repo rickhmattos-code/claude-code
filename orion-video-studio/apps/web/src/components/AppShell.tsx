@@ -29,7 +29,7 @@ export function AppShell({ children, bare }: { children: React.ReactNode; bare?:
   if (bare) return <>{children}</>
   const nav = [
     { href: '/', label: t('nav.projects'), icon: <FolderOpen size={18} /> },
-    { href: '/templates', label: t('nav.templates'), icon: <LayoutTemplate size={18} /> },
+    { href: '/modelos', label: t('nav.templates'), icon: <LayoutTemplate size={18} /> },
     { href: '/assistant', label: t('nav.assistant'), icon: <Sparkles size={18} /> },
     { href: '/music', label: t('nav.music'), icon: <Music size={18} /> },
     { href: '/voices', label: t('nav.voices'), icon: <Mic size={18} /> },
@@ -64,7 +64,7 @@ export function AppShell({ children, bare }: { children: React.ReactNode; bare?:
         </nav>
         <div className="hidden lg:flex flex-col gap-2 p-3 border-t border-[var(--color-border)]">
           {me.workspaces.length > 1 && (
-            <Select aria-label="Workspace" value={workspace.id} onChange={(e) => setWorkspace(me.workspaces.find((w) => w.id === e.target.value)!)}>
+            <Select aria-label="Espaço de trabalho" value={workspace.id} onChange={(e) => setWorkspace(me.workspaces.find((w) => w.id === e.target.value)!)}>
               {me.workspaces.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}

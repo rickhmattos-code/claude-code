@@ -144,7 +144,7 @@ export function Slider({ label, value, min, max, step = 0.01, onChange, format, 
         <label htmlFor={fid} className="text-[var(--color-muted)]">
           {label}
         </label>
-        <span className="tabular-nums text-[var(--color-text)]">{format ? format(value) : value.toFixed(2)}</span>
+        <span className="tabular-nums text-[var(--color-text)]">{format ? format(value) : formatDecimal(value, 2)}</span>
       </div>
       <input
         id={fid}
@@ -308,6 +308,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export const useToast = () => useContext(ToastCtx)
 
+/** Número com vírgula decimal e ponto de milhar (pt-BR). */
+export function formatDecimal(n: number, digits = 1): string {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+}
+
+// custos dos provedores são cobrados em dólar; o formato segue o padrão brasileiro (US$ 1.234,50)
+const USD = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'USD' })
+
 export function formatBytes(n: number | null | undefined): string {
   if (!n) return '0 B'
   const u = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -317,5 +325,5 @@ export function formatBytes(n: number | null | undefined): string {
 
 export function formatCents(c: number | null | undefined): string {
   if (c === null || c === undefined) return '—'
-  return `US$ ${(c / 100).toFixed(2).replace('.', ',')}`
+  return USD.format(c / 100)
 }

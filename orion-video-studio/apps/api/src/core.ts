@@ -53,7 +53,8 @@ export class HttpError extends Error {
   }
 }
 
-export const notFound = (what = 'Recurso') => new HttpError(404, 'not_found', `${what} não encontrado.`)
+/** 404 com concordância: notFound('Projeto') → "Projeto não encontrado."; notFound('Mídia', 'f') → "Mídia não encontrada." */
+export const notFound = (what = 'Recurso', gender: 'm' | 'f' = 'm') => new HttpError(404, 'not_found', `${what} não ${gender === 'f' ? 'encontrada' : 'encontrado'}.`)
 
 export function parse<T>(schema: ZodType<T>, data: unknown, where = 'corpo'): T {
   const r = schema.safeParse(data)
@@ -122,8 +123,8 @@ const RANK: Record<Role, number> = { VIEWER: 0, EDITOR: 1, OWNER: 2 }
 /** Lança 404 (não 403) para não revelar a existência de recursos de terceiros. */
 export async function requireMember(deps: Deps, userId: string, workspaceId: string, min: Role = 'VIEWER') {
   const m = await deps.db.membership.findUnique({ where: { userId_workspaceId: { userId, workspaceId } } })
-  if (!m) throw notFound('Workspace')
-  if (RANK[m.role] < RANK[min]) throw new HttpError(403, 'forbidden', 'Seu papel neste workspace não permite esta ação.')
+  if (!m) throw notFound('Espaço de trabalho')
+  if (RANK[m.role] < RANK[min]) throw new HttpError(403, 'forbidden', 'Seu papel neste espaço de trabalho não permite esta ação.')
   return m
 }
 

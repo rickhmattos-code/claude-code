@@ -44,12 +44,12 @@ async function assertWorkspaceAssets(deps: Deps, ws: string, ids: Array<string |
   const list = ids.filter((x): x is string => !!x)
   if (!list.length) return
   const n = await deps.db.asset.count({ where: { id: { in: list }, workspaceId: ws, deletedAt: null, ...(kind ? { kind } : {}) } })
-  if (n !== new Set(list).size) throw new HttpError(400, 'asset_invalid', 'Mídia não encontrada neste workspace (ou de tipo incorreto).')
+  if (n !== new Set(list).size) throw new HttpError(400, 'asset_invalid', 'Mídia não encontrada neste espaço de trabalho (ou de tipo incorreto).')
 }
 
 export function registerLibrary(app: FastifyInstance, deps: Deps) {
   // ------------------------------------------------------------ templates
-  route(app, deps, { method: 'GET', url: '/api/templates', summary: 'Templates do sistema e do workspace (última versão)', tag: 'templates', query: z.object({ workspaceId: z.string().uuid().optional() }) }, async ({ user, query }) => {
+  route(app, deps, { method: 'GET', url: '/api/templates', summary: 'Modelos do sistema e do espaço de trabalho (última versão)', tag: 'templates', query: z.object({ workspaceId: z.string().uuid().optional() }) }, async ({ user, query }) => {
     if (query.workspaceId) await requireMember(deps, user.id, query.workspaceId)
     const rows = await deps.db.template.findMany({ where: { OR: [{ workspaceId: null }, ...(query.workspaceId ? [{ workspaceId: query.workspaceId }] : [])] }, orderBy: [{ slug: 'asc' }, { version: 'desc' }] })
     const latest = new Map<string, (typeof rows)[number]>()
@@ -60,7 +60,7 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     return [...latest.values()].map((t) => ({ id: t.id, slug: t.slug, version: t.version, name: t.name, category: t.category, isSystem: t.isSystem, workspaceId: t.workspaceId, definition: t.definition }))
   })
 
-  route(app, deps, { method: 'POST', url: '/api/workspaces/:ws/templates', summary: 'Salvar template próprio (nova versão se o slug existir)', tag: 'templates', body: SaveTemplateBody }, async ({ user, params, body }) => {
+  route(app, deps, { method: 'POST', url: '/api/workspaces/:ws/templates', summary: 'Salvar modelo próprio (nova versão se o slug existir)', tag: 'templates', body: SaveTemplateBody }, async ({ user, params, body }) => {
     await requireMember(deps, user.id, params.ws!, 'EDITOR')
     const def = TemplateDefinition.parse(body.definition)
     const last = await deps.db.template.findFirst({ where: { workspaceId: params.ws!, slug: def.slug }, orderBy: { version: 'desc' } })
@@ -69,18 +69,18 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     return { id: t.id, version }
   })
 
-  route(app, deps, { method: 'POST', url: '/api/templates/:id/duplicate', summary: 'Duplicar template para o workspace', tag: 'templates', body: z.object({ workspaceId: z.string().uuid(), slug: z.string().regex(/^[a-z0-9-]{2,60}$/), name: z.string().min(1).max(80) }) }, async ({ user, params, body }) => {
+  route(app, deps, { method: 'POST', url: '/api/templates/:id/duplicate', summary: 'Duplicar modelo para o espaço de trabalho', tag: 'templates', body: z.object({ workspaceId: z.string().uuid(), slug: z.string().regex(/^[a-z0-9-]{2,60}$/), name: z.string().min(1).max(80) }) }, async ({ user, params, body }) => {
     await requireMember(deps, user.id, body.workspaceId, 'EDITOR')
     const src = await deps.db.template.findUnique({ where: { id: params.id! } })
-    if (!src || (src.workspaceId && src.workspaceId !== body.workspaceId)) throw notFound('Template')
+    if (!src || (src.workspaceId && src.workspaceId !== body.workspaceId)) throw notFound('Modelo')
     const def = TemplateDefinition.parse({ ...(src.definition as object), slug: body.slug, name: body.name, version: 1, category: (src.definition as { category: string }).category })
     const exists = await deps.db.template.findFirst({ where: { workspaceId: body.workspaceId, slug: body.slug } })
-    if (exists) throw new HttpError(409, 'slug_taken', 'Já existe um template com este identificador.')
+    if (exists) throw new HttpError(409, 'slug_taken', 'Já existe um modelo com este identificador.')
     const t = await deps.db.template.create({ data: { workspaceId: body.workspaceId, slug: def.slug, version: 1, name: def.name, category: def.category, definition: def as unknown as Prisma.InputJsonValue } })
     return { id: t.id }
   })
 
-  route(app, deps, { method: 'DELETE', url: '/api/templates/:id', summary: 'Excluir template próprio (todas as versões)', tag: 'templates' }, async ({ user, params }) => {
+  route(app, deps, { method: 'DELETE', url: '/api/templates/:id', summary: 'Excluir modelo próprio (todas as versões)', tag: 'templates' }, async ({ user, params }) => {
     const t = await ownedBy(deps, user.id, await deps.db.template.findUnique({ where: { id: params.id! } }), 'Template', 'EDITOR')
     await deps.db.template.deleteMany({ where: { workspaceId: t.workspaceId, slug: t.slug } })
     return { ok: true }
@@ -160,7 +160,7 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     await assertWorkspaceAssets(deps, ws, body.references.map((r) => r.assetId), 'IMAGE')
     if (body.voiceProfileId) {
       const v = await deps.db.voiceProfile.findFirst({ where: { id: body.voiceProfileId, workspaceId: ws } })
-      if (!v) throw new HttpError(400, 'voice_invalid', 'Voz não encontrada neste workspace.')
+      if (!v) throw new HttpError(400, 'voice_invalid', 'Voz não encontrada neste espaço de trabalho.')
     }
     const data = { name: body.name, description: body.description, appearance: body.appearance, wardrobe: body.wardrobe, palette: body.palette, mustKeep: body.mustKeep, continuityRules: body.continuityRules, voiceProfileId: body.voiceProfileId ?? null }
     return deps.db.$transaction(async (tx) => {
@@ -191,7 +191,7 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     if (!a.status(deps.env).configured) throw new HttpError(409, 'provider_not_configured', 'Integração de voz com configuração pendente.')
     return { models: a.models(), voices: await a.voices(deps.env) }
   })
-  route(app, deps, { method: 'GET', url: '/api/workspaces/:ws/voice-profiles', summary: 'Vozes salvas do workspace', tag: 'voices' }, async ({ user, params }) => {
+  route(app, deps, { method: 'GET', url: '/api/workspaces/:ws/voice-profiles', summary: 'Vozes salvas do espaço de trabalho', tag: 'voices' }, async ({ user, params }) => {
     await requireMember(deps, user.id, params.ws!)
     return deps.db.voiceProfile.findMany({ where: { workspaceId: params.ws! }, orderBy: { createdAt: 'asc' } })
   })
@@ -265,9 +265,9 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
   })
   route(app, deps, { method: 'POST', url: '/api/music/:id/favorite', summary: 'Favoritar faixa', tag: 'music' }, async ({ user, params }) => {
     const m = await deps.db.musicTrack.findUnique({ where: { id: params.id! } })
-    if (!m) throw notFound('Faixa')
+    if (!m) throw notFound('Faixa', 'f')
     if (m.workspaceId) await requireMember(deps, user.id, m.workspaceId).catch(() => {
-      throw notFound('Faixa')
+      throw notFound('Faixa', 'f')
     })
     await deps.db.musicFavorite.upsert({ where: { userId_musicTrackId: { userId: user.id, musicTrackId: m.id } }, create: { userId: user.id, musicTrackId: m.id }, update: {} })
     return { ok: true }
