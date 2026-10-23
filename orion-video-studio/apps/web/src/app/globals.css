@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@source "../../../../packages/ui/src";
+
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter-SemiBold.otf') format('opentype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('/fonts/Inter-ExtraBold.otf') format('opentype'); font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Inter Display'; src: url('/fonts/InterDisplay-Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Inter Display'; src: url('/fonts/InterDisplay-SemiBold.otf') format('opentype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Inter Display'; src: url('/fonts/InterDisplay-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Inter Display'; src: url('/fonts/InterDisplay-ExtraBold.otf') format('opentype'); font-weight: 800; font-display: swap; }
+
+/* Identidade ORION: grafite quente, Âmbar Betelgeuse e Azul Rigel */
+:root {
+  --color-bg: #0e0f12;
+  --color-surface: #16181d;
+  --color-surface-2: #1f2229;
+  --color-border: #2a2e37;
+  --color-border-strong: #3b404c;
+  --color-text: #eceef1;
+  --color-muted: #a1a7b2;
+  --color-faint: #6b7280;
+  --color-accent: #f2a93b;
+  --color-accent-ink: #1a1205;
+  --color-blue: #7b93ff;
+  --color-ok: #5bc489;
+  --color-danger: #f07272;
+  --track-video: #3d4f8f;
+  --track-overlay: #5a4a8f;
+  --track-text: #8f6a2f;
+  --track-audio: #2f6f5a;
+  --track-voice: #2f6380;
+  --track-music: #6a3f6f;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter Display', 'Inter', system-ui, sans-serif;
+}
+
+html, body { background: var(--color-bg); color: var(--color-text); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.font-display { font-family: var(--font-display); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+
+.orion-range { appearance: none; height: 20px; background: transparent; }
+.orion-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: var(--color-border-strong); }
+.orion-range::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--color-accent); margin-top: -5px; }
+.orion-range::-moz-range-track { height: 4px; border-radius: 4px; background: var(--color-border-strong); }
+.orion-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--color-accent); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
