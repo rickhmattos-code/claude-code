@@ -44,6 +44,7 @@ const EFFECT_DEFAULTS: Record<EffectType, () => Effect> = {
   vignette: () => ({ id: newId(), type: 'vignette', strength: 0.5 }),
   grain: () => ({ id: newId(), type: 'grain', amount: 0.3 }),
   chromakey: () => ({ id: newId(), type: 'chromakey', color: '#00FF00', similarity: 0.3, blend: 0.1 }),
+  mask: () => ({ id: newId(), type: 'mask', shape: 'ellipse', x: 0.5, y: 0.5, w: 0.6, h: 0.6, feather: 0.05, invert: false }),
   denoise: () => ({ id: newId(), type: 'denoise', reductionDb: 12 }),
 }
 
@@ -303,6 +304,7 @@ function ClipInspector({ clip, trackLocked }: { clip: Clip; trackLocked: boolean
             {(Object.keys(EFFECT_SUPPORT) as EffectType[])
               .filter((t) => t !== 'denoise' && !clip.effects.some((e) => e.type === t))
               .filter((t) => clip.type !== 'text' || t === 'blur')
+              .filter((t) => t !== 'mask' || clip.type !== 'text')
               .map((t) => (
                 <option key={t} value={t}>
                   {EFFECT_SUPPORT[t].label} {EFFECT_SUPPORT[t].preview === 'approx' ? '(prévia aproximada)' : ''}
@@ -333,7 +335,7 @@ function EffectToggle({ clip, type }: { clip: Clip; type: 'denoise' }) {
 
 function EffectEditor({ clip, effect }: { clip: Clip; effect: Effect }) {
   const apply = useEditor((s) => s.apply)
-  const set = (patch: Record<string, number | string>) =>
+  const set = (patch: Record<string, number | string | boolean>) =>
     apply((d) => updateClip(d, clip.id, (c) => void Object.assign(c.effects.find((x) => x.id === effect.id) ?? {}, patch)), { coalesce: `${clip.id}:fx:${effect.id}` })
   const remove = () => apply((d) => updateClip(d, clip.id, (c) => void (c.effects = c.effects.filter((x) => x.id !== effect.id))))
   const sup = EFFECT_SUPPORT[effect.type]
@@ -364,6 +366,26 @@ function EffectEditor({ clip, effect }: { clip: Clip; effect: Effect }) {
           </Field>
           <Slider label="Similaridade" value={effect.similarity} min={0.01} max={1} onChange={(v) => set({ similarity: v })} />
           <Slider label="Suavização" value={effect.blend} min={0} max={1} onChange={(v) => set({ blend: v })} />
+        </>
+      )}
+      {effect.type === 'mask' && (
+        <>
+          <Field label="Forma" htmlFor={`mk-${effect.id}`}>
+            <Select id={`mk-${effect.id}`} value={effect.shape} onChange={(e) => set({ shape: e.target.value })}>
+              <option value="ellipse">Elipse</option>
+              <option value="rect">Retângulo</option>
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-x-3">
+            <Slider label="Centro X" value={effect.x} min={0} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set({ x: v })} />
+            <Slider label="Centro Y" value={effect.y} min={0} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set({ y: v })} />
+            <Slider label="Largura" value={effect.w} min={0.01} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set({ w: v })} />
+            <Slider label="Altura" value={effect.h} min={0.01} max={1} step={0.01} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set({ h: v })} />
+          </div>
+          <Slider label="Borda suave" value={effect.feather} min={0} max={0.25} step={0.005} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set({ feather: v })} />
+          <label className="flex items-center gap-2 text-[13px]">
+            <input type="checkbox" checked={effect.invert} onChange={(e) => set({ invert: e.target.checked })} /> Inverter (esconde o interior)
+          </label>
         </>
       )}
     </div>

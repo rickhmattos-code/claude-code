@@ -42,7 +42,7 @@ function treeRssKb(pid: number): number {
   }
 }
 
-describe.runIf(RUN >= 5)('exportações longas', () => {
+describe.runIf(RUN >= 5 || process.env.RUN_4K === '1')('exportações longas', () => {
   beforeAll(async () => {
     resetDatabase()
     seedCatalog()
@@ -62,7 +62,7 @@ describe.runIf(RUN >= 5)('exportações longas', () => {
     await api?.close()
   })
 
-  async function longExport(minutes: number) {
+  async function longExport(minutes: number, resolution: '720p' | '1080p' | '2160p' = '720p') {
     const total = minutes * 60
     let doc = createDocument({ aspect: '16:9' })
     const [main, , , voice, music] = doc.tracks
@@ -79,7 +79,7 @@ describe.runIf(RUN >= 5)('exportações longas', () => {
     expect(save.status).toBe(200)
     const t0 = Date.now()
     let peakKb = 0
-    const r = await c.post(`/api/projects/${p.json.id}/renders`, { preset: { resolution: '720p', captions: 'burn', normalizeLoudness: true }, idempotencyKey: `long-${minutes}-${Date.now()}` })
+    const r = await c.post(`/api/projects/${p.json.id}/renders`, { preset: { resolution, captions: 'burn', normalizeLoudness: true }, idempotencyKey: `long-${minutes}-${resolution}-${Date.now()}` })
     const done = await c.waitRender(r.json.id, 3 * 3600_000, () => {
       peakKb = Math.max(peakKb, treeRssKb(worker.pid!))
     })
@@ -90,12 +90,15 @@ describe.runIf(RUN >= 5)('exportações longas', () => {
     await download(api.base, done.downloadUrl, f)
     const dur = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString())
     expect(Math.abs(dur - total)).toBeLessThan(0.05)
-    const report = { minutes, renderSeconds: Math.round(seconds), realtimeFactor: Number((total / seconds).toFixed(2)), peakMemoryMb: Math.round(peakKb / 1024), outputMb: Math.round(done.validation.sizeBytes / 1024 / 1024), cpus: cpus().length, cpuModel: cpus()[0]?.model, ramGb: Math.round(totalmem() / 1024 ** 3) }
+    const dims = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', f]).toString().trim()
+    if (resolution === '2160p') expect(dims).toBe('3840,2160')
+    const report = { minutes, resolution, renderSeconds: Math.round(seconds), realtimeFactor: Number((total / seconds).toFixed(2)), peakMemoryMb: Math.round(peakKb / 1024), outputMb: Math.round(done.validation.sizeBytes / 1024 / 1024), cpus: cpus().length, cpuModel: cpus()[0]?.model, ramGb: Math.round(totalmem() / 1024 ** 3) }
     console.log(`PERF ${JSON.stringify(report)}`)
     const { appendFileSync } = await import('node:fs')
     appendFileSync(join(tmpDir, '..', 'orion-perf-results.jsonl'), `${JSON.stringify({ ...report, at: new Date().toISOString() })}\n`)
   }
 
-  test('projeto de 5 minutos', () => longExport(5), 3600_000)
+  test.runIf(RUN >= 5)('projeto de 5 minutos', () => longExport(5), 3600_000)
   test.runIf(RUN >= 15)('projeto de 15 minutos', () => longExport(15), 3 * 3600_000)
+  test.runIf(process.env.RUN_4K === '1')('projeto de 2 minutos em 4K (2160p)', () => longExport(2, '2160p'), 3600_000)
 })

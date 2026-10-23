@@ -12,6 +12,8 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 WORKDIR /app
+# volumes nomeados herdam o dono destes diretórios (o processo roda como "ubuntu")
+RUN mkdir -p /data/storage /data/tmp && chown -R ubuntu:ubuntu /data
 
 FROM base AS deps
 COPY package.json package-lock.json .npmrc ./
@@ -25,11 +27,16 @@ COPY packages/providers/package.json packages/providers/
 COPY packages/server/package.json packages/server/
 COPY packages/ui/package.json packages/ui/
 COPY packages/db/package.json packages/db/
-RUN npm ci --no-audit --no-fund
+# CA extra opcional (redes corporativas com inspeção TLS): docker-compose.ca.yml
+RUN --mount=type=secret,id=extra_ca,required=false \
+    if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi \
+ && npm ci --no-audit --no-fund
 
 FROM deps AS source
 COPY . .
-RUN npm run db:generate
+RUN --mount=type=secret,id=extra_ca,required=false \
+    if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi \
+ && DATABASE_URL=postgresql://build:build@localhost:5432/build npm run db:generate
 
 # ---------------------------------------------------------------- API
 FROM source AS api
@@ -40,7 +47,6 @@ CMD ["sh", "-c", "cd /app/packages/db && npx prisma migrate deploy && cd /app/ap
 
 # ---------------------------------------------------------------- worker
 FROM source AS worker
-RUN mkdir -p /data/tmp && chown ubuntu:ubuntu /data/tmp
 USER ubuntu
 ENV WORKER_TMP_DIR=/data/tmp FONTS_DIR=/app/assets/fonts
 ENTRYPOINT ["/usr/bin/tini", "--"]
@@ -49,7 +55,9 @@ CMD ["sh", "-c", "cd /app/apps/worker && exec node --import tsx src/main.ts"]
 # ---------------------------------------------------------------- web
 FROM source AS web
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN cd apps/web && npm run build
+RUN --mount=type=secret,id=extra_ca,required=false \
+    if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi \
+ && cd apps/web && npm run build
 USER ubuntu
 EXPOSE 3000
 ENTRYPOINT ["/usr/bin/tini", "--"]

@@ -1,13 +1,9 @@
 import type { NextConfig } from 'next'
 
-const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000'
-
 const config: NextConfig = {
   transpilePackages: ['@orion/shared', '@orion/timeline', '@orion/ui'],
-  // o navegador fala apenas com a mesma origem; /api é encaminhado à API
-  async rewrites() {
-    return [{ source: '/api/:path*', destination: `${API}/api/:path*` }]
-  },
+  // o navegador fala apenas com a mesma origem; /api é encaminhado à API por
+  // src/app/api/[...path]/route.ts (endereço lido em tempo de execução)
   poweredByHeader: false,
   async headers() {
     return [

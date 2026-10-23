@@ -7,6 +7,9 @@ import {
   activeVisualLayers,
   FONT_LINE_EM,
   fontPx,
+  type MaskEffect,
+  maskGeometry,
+  masksOf,
   wrapCaptionTokens,
   wrapText,
 } from '@orion/timeline'
@@ -71,6 +74,64 @@ function chromaKeyed(src: CanvasImageSource, w: number, h: number, e: Extract<Ef
   }
   ctx.putImageData(img, 0, 0)
   return keyCanvas
+}
+
+let layerCanvas: HTMLCanvasElement | null = null
+let maskCanvas: HTMLCanvasElement | null = null
+
+/**
+ * Desenha a camada num canvas auxiliar do tamanho ajustado (w×h) e recorta
+ * com as máscaras — mesma geometria e mesmo sigma de maskSource (exportação).
+ * A borda suave é desenhada com margem para não esmaecer nas bordas do
+ * quadro (o gblur do FFmpeg replica as bordas).
+ */
+function maskedLayer(w: number, h: number, masks: MaskEffect[], draw: (c: CanvasRenderingContext2D, w: number, h: number) => void): HTMLCanvasElement {
+  const k = Math.min(1, 1920 / Math.max(w, h))
+  const lw = Math.max(2, Math.round(w * k))
+  const lh = Math.max(2, Math.round(h * k))
+  layerCanvas ??= document.createElement('canvas')
+  maskCanvas ??= document.createElement('canvas')
+  layerCanvas.width = lw
+  layerCanvas.height = lh
+  const lc = layerCanvas.getContext('2d')!
+  lc.save()
+  lc.translate(lw / 2, lh / 2)
+  draw(lc, lw, lh)
+  lc.restore()
+  for (const m of masks) {
+    const g = maskGeometry(m, lw, lh)
+    const pad = Math.ceil(g.sigma * 3) + 1
+    maskCanvas.width = lw + 2 * pad
+    maskCanvas.height = lh + 2 * pad
+    const mc = maskCanvas.getContext('2d')!
+    mc.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
+    const shape = () => {
+      mc.beginPath()
+      if (m.shape === 'ellipse') mc.ellipse(pad + g.cx, pad + g.cy, g.rx, g.ry, 0, 0, Math.PI * 2)
+      else {
+        // lados encostados na borda continuam pela margem (equivale à replicação de borda)
+        const x0 = g.cx - g.rx <= 0 ? 0 : pad + g.cx - g.rx
+        const y0 = g.cy - g.ry <= 0 ? 0 : pad + g.cy - g.ry
+        const x1 = g.cx + g.rx >= lw ? lw + 2 * pad : pad + g.cx + g.rx
+        const y1 = g.cy + g.ry >= lh ? lh + 2 * pad : pad + g.cy + g.ry
+        mc.rect(x0, y0, x1 - x0, y1 - y0)
+      }
+      mc.fill()
+    }
+    mc.fillStyle = '#fff'
+    if (m.invert) {
+      mc.fillRect(0, 0, maskCanvas.width, maskCanvas.height)
+      mc.globalCompositeOperation = 'destination-out'
+    }
+    mc.filter = g.sigma > 0.05 ? `blur(${g.sigma}px)` : 'none'
+    shape()
+    mc.filter = 'none'
+    mc.globalCompositeOperation = 'source-over'
+    lc.globalCompositeOperation = 'destination-in'
+    lc.drawImage(maskCanvas, pad, pad, lw, lh, 0, 0, lw, lh)
+    lc.globalCompositeOperation = 'source-over'
+  }
+  return layerCanvas
 }
 
 function drawText(ctx: CanvasRenderingContext2D, clip: Extract<Clip, { type: 'text' }>, W: number, H: number) {
@@ -153,6 +214,44 @@ export function drawCaptions(ctx: CanvasRenderingContext2D, doc: TimelineDoc, t:
 }
 
 /** Desenha o quadro do tempo `t` (flicks) no canvas de tamanho W×H. */
+/** Mídia + efeitos de imagem centrados na origem atual, no tamanho bw×bh. */
+function drawMedia(ctx: CanvasRenderingContext2D, img: CanvasImageSource, effects: Effect[], bw: number, bh: number, res: number, alpha: number) {
+  ctx.filter = cssFilter(effects, res)
+  try {
+    ctx.drawImage(img, -bw / 2, -bh / 2, bw, bh)
+  } catch {
+    // frame ainda não decodificado
+  }
+  ctx.filter = 'none'
+  for (const e of effects) {
+    if (e.type === 'temperature') {
+      const warm = (6500 - e.kelvin) / 4500
+      ctx.globalCompositeOperation = 'soft-light'
+      ctx.fillStyle = warm > 0 ? `rgba(255,140,40,${Math.min(0.6, warm * 0.5)})` : `rgba(60,130,255,${Math.min(0.6, -warm * 0.5)})`
+      ctx.fillRect(-bw / 2, -bh / 2, bw, bh)
+      ctx.globalCompositeOperation = 'source-over'
+    }
+    if (e.type === 'vignette' && e.strength > 0) {
+      const g = ctx.createRadialGradient(0, 0, Math.min(bw, bh) * 0.25, 0, 0, Math.hypot(bw, bh) / 2)
+      g.addColorStop(0, 'rgba(0,0,0,0)')
+      g.addColorStop(1, `rgba(0,0,0,${0.85 * e.strength})`)
+      ctx.fillStyle = g
+      ctx.fillRect(-bw / 2, -bh / 2, bw, bh)
+    }
+    if (e.type === 'grain' && e.amount > 0) {
+      ctx.globalAlpha = alpha * e.amount * 0.35
+      ctx.globalCompositeOperation = 'overlay'
+      const pattern = ctx.createPattern(noiseCanvas(), 'repeat')
+      if (pattern) {
+        ctx.fillStyle = pattern
+        ctx.fillRect(-bw / 2, -bh / 2, bw, bh)
+      }
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = alpha
+    }
+  }
+}
+
 export function composeFrame(
   ctx: CanvasRenderingContext2D,
   doc: TimelineDoc,
@@ -178,50 +277,32 @@ export function composeFrame(
       ctx.scale(state.scale, state.scale)
       drawText(ctx, clip, W, H)
     } else if (clip.type === 'color') {
-      ctx.scale(state.scale, state.scale)
-      ctx.fillStyle = clip.color
-      ctx.fillRect(-W / 2, -H / 2, W, H)
+      const masks = masksOf(clip.effects)
+      if (masks.length) {
+        const layer = maskedLayer(W, H, masks, (c, w, h) => {
+          c.fillStyle = clip.color
+          c.fillRect(-w / 2, -h / 2, w, h)
+        })
+        ctx.drawImage(layer, (-W * state.scale) / 2, (-H * state.scale) / 2, W * state.scale, H * state.scale)
+      } else {
+        ctx.scale(state.scale, state.scale)
+        ctx.fillStyle = clip.color
+        ctx.fillRect(-W / 2, -H / 2, W, H)
+      }
     } else {
       const src = sources(clip)
       if (src?.el && src.width && src.height) {
         const s = clip.fit === 'cover' ? Math.max(W / src.width, H / src.height) : Math.min(W / src.width, H / src.height)
         const bw = src.width * s * state.scale
         const bh = src.height * s * state.scale
-        ctx.filter = cssFilter(clip.effects, res)
         const key = clip.effects.find((e): e is Extract<Effect, { type: 'chromakey' }> => e.type === 'chromakey')
         const img: CanvasImageSource = key ? chromaKeyed(src.el, src.width, src.height, key) : src.el
-        try {
-          ctx.drawImage(img, -bw / 2, -bh / 2, bw, bh)
-        } catch {
-          // frame ainda não decodificado
-        }
-        ctx.filter = 'none'
-        for (const e of clip.effects) {
-          if (e.type === 'temperature') {
-            const warm = (6500 - e.kelvin) / 4500
-            ctx.globalCompositeOperation = 'soft-light'
-            ctx.fillStyle = warm > 0 ? `rgba(255,140,40,${Math.min(0.6, warm * 0.5)})` : `rgba(60,130,255,${Math.min(0.6, -warm * 0.5)})`
-            ctx.fillRect(-bw / 2, -bh / 2, bw, bh)
-            ctx.globalCompositeOperation = 'source-over'
-          }
-          if (e.type === 'vignette' && e.strength > 0) {
-            const g = ctx.createRadialGradient(0, 0, Math.min(bw, bh) * 0.25, 0, 0, Math.hypot(bw, bh) / 2)
-            g.addColorStop(0, 'rgba(0,0,0,0)')
-            g.addColorStop(1, `rgba(0,0,0,${0.85 * e.strength})`)
-            ctx.fillStyle = g
-            ctx.fillRect(-bw / 2, -bh / 2, bw, bh)
-          }
-          if (e.type === 'grain' && e.amount > 0) {
-            ctx.globalAlpha = state.opacity * e.amount * 0.35
-            ctx.globalCompositeOperation = 'overlay'
-            const pattern = ctx.createPattern(noiseCanvas(), 'repeat')
-            if (pattern) {
-              ctx.fillStyle = pattern
-              ctx.fillRect(-bw / 2, -bh / 2, bw, bh)
-            }
-            ctx.globalCompositeOperation = 'source-over'
-            ctx.globalAlpha = state.opacity
-          }
+        const masks = masksOf(clip.effects)
+        if (masks.length) {
+          const layer = maskedLayer(src.width * s, src.height * s, masks, (c, w, h) => drawMedia(c, img, clip.effects, w, h, res, 1))
+          ctx.drawImage(layer, -bw / 2, -bh / 2, bw, bh)
+        } else {
+          drawMedia(ctx, img, clip.effects, bw, bh, res, state.opacity)
         }
       } else {
         ctx.fillStyle = '#1f2229'

@@ -115,6 +115,19 @@ export const Effect = z.discriminatedUnion('type', [
   }),
   z.object({
     id,
+    type: z.literal('mask'),
+    shape: z.enum(['rect', 'ellipse']),
+    /** centro e tamanho como fração do quadro do clipe (após o ajuste cover/contain) */
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    w: z.number().min(0.01).max(1),
+    h: z.number().min(0.01).max(1),
+    /** borda suave, fração do menor lado do clipe */
+    feather: z.number().min(0).max(0.25),
+    invert: z.boolean(),
+  }),
+  z.object({
+    id,
     type: z.literal('denoise'),
     /** redução de ruído de áudio (afftdn), dB */
     reductionDb: z.number().min(1).max(40),

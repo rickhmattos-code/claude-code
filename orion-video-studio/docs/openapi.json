@@ -432,6 +432,99 @@
         }
       }
     },
+    "/api/projects/{id}/derive": {
+      "post": {
+        "summary": "Criar projeto com um trecho (corte curto)",
+        "tags": [
+          "projects"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso"
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "404": {
+            "description": "Não encontrado ou sem acesso"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "baseVersion": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "end": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "aspect": {
+                    "type": "string",
+                    "enum": [
+                      "9:16",
+                      "16:9",
+                      "1:1",
+                      "4:5",
+                      "custom"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "baseVersion",
+                  "start",
+                  "end"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/projects/{id}": {
       "get": {
         "summary": "Abrir projeto",
@@ -981,6 +1074,66 @@
                                                 },
                                                 "type": {
                                                   "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
                                                   "const": "denoise"
                                                 },
                                                 "reductionDb": {
@@ -1372,6 +1525,66 @@
                                                 },
                                                 "type": {
                                                   "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
                                                   "const": "denoise"
                                                 },
                                                 "reductionDb": {
@@ -1751,6 +1964,66 @@
                                                 "color",
                                                 "similarity",
                                                 "blend"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
                                               ]
                                             },
                                             {
@@ -2227,6 +2500,66 @@
                                                 },
                                                 "type": {
                                                   "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
                                                   "const": "denoise"
                                                 },
                                                 "reductionDb": {
@@ -2577,6 +2910,66 @@
                                                 "color",
                                                 "similarity",
                                                 "blend"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
                                               ]
                                             },
                                             {
@@ -3301,6 +3694,114 @@
             "cookieAuth": []
           }
         ]
+      }
+    },
+    "/api/projects/{id}/captions/translate": {
+      "post": {
+        "summary": "Traduzir legendas (tempos preservados)",
+        "tags": [
+          "captions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso"
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "404": {
+            "description": "Não encontrado ou sem acesso"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "es",
+                      "fr",
+                      "it",
+                      "de",
+                      "pt-BR",
+                      "pt-PT"
+                    ]
+                  },
+                  "segments": {
+                    "minItems": 1,
+                    "maxItems": 2000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "end": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "start",
+                        "end",
+                        "text"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "target",
+                  "segments"
+                ]
+              }
+            }
+          }
+        }
       }
     },
     "/api/projects/{id}/captions.srt": {
@@ -4100,7 +4601,8 @@
                         "type": "string",
                         "enum": [
                           "720p",
-                          "1080p"
+                          "1080p",
+                          "2160p"
                         ]
                       },
                       "captions": {
@@ -8130,6 +8632,66 @@
                                                 },
                                                 "type": {
                                                   "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
                                                   "const": "denoise"
                                                 },
                                                 "reductionDb": {
@@ -8521,6 +9083,66 @@
                                                 },
                                                 "type": {
                                                   "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
                                                   "const": "denoise"
                                                 },
                                                 "reductionDb": {
@@ -8900,6 +9522,66 @@
                                                 "color",
                                                 "similarity",
                                                 "blend"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
                                               ]
                                             },
                                             {
@@ -9376,6 +10058,66 @@
                                                 },
                                                 "type": {
                                                   "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
                                                   "const": "denoise"
                                                 },
                                                 "reductionDb": {
@@ -9726,6 +10468,66 @@
                                                 "color",
                                                 "similarity",
                                                 "blend"
+                                              ]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1,
+                                                  "maxLength": 64
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "const": "mask"
+                                                },
+                                                "shape": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "rect",
+                                                    "ellipse"
+                                                  ]
+                                                },
+                                                "x": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "y": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 1
+                                                },
+                                                "w": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "h": {
+                                                  "type": "number",
+                                                  "minimum": 0.01,
+                                                  "maximum": 1
+                                                },
+                                                "feather": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 0.25
+                                                },
+                                                "invert": {
+                                                  "type": "boolean"
+                                                }
+                                              },
+                                              "required": [
+                                                "id",
+                                                "type",
+                                                "shape",
+                                                "x",
+                                                "y",
+                                                "w",
+                                                "h",
+                                                "feather",
+                                                "invert"
                                               ]
                                             },
                                             {

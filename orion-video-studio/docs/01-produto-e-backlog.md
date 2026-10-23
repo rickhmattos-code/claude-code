@@ -106,5 +106,9 @@ Status: ✅ implementado e testado · 🟡 implementado, depende de credencial o
 | Assistente por comandos | Comandos estruturados validados, prévia de diferenças, desfazer | ✅ (parser local; LLM opcional 🟡) |
 | Editar vídeo pelo texto | Apagar palavras na transcrição corta o vídeo | ⏳ |
 | Cortes curtos automáticos | Sugerir trechos de 30 a 60 s de um vídeo longo | ⏳ |
-| Máscaras, remoção de fundo, rastreamento | Fases próprias com dependências e custos explícitos | ⏳ |
+| Máscaras retangulares/elípticas | Prévia e exportação com a mesma geometria | ✅ |
+| Edição pelo texto, pausas e “ãh/hum” | Corte global com ripple em todas as trilhas e legendas | ✅ |
+| Cortes curtos a partir de vídeo longo | Heurística transparente (fala, ritmo, gancho, energia) → novo projeto | ✅ |
+| Tradução de legendas | Só com provedor configurado; tempos preservados | ✅ |
+| Remoção de fundo, rastreamento | Fases próprias com dependências e custos explícitos | ⏳ |
 | Tradução de legendas | Só com serviço funcional e testado | ⏳ (não oferecida na interface) |

@@ -8,9 +8,9 @@ Editor de vídeo em timeline com templates, narração, legendas, biblioteca mus
 
 | | Situação |
 |---|---|
-| ✅ **Implementado e testado** | Contas e workspaces · upload direto (URL assinada, multipart) · inspeção ffprobe, miniatura, waveform e proxies · timeline com várias trilhas (cortar, dividir, duplicar, excluir, ripple, imã, zoom, mute/solo/lock/hide, keyframes, velocidade, congelar quadro, inverter, marcadores, áreas seguras) · undo/redo · salvamento automático com concorrência otimista · recuperação após recarregar · histórico de versões · 10 templates versionados + templates próprios · efeitos e transições exportáveis · legendas (editar, dividir, unir, SRT/VTT, estilos, gravadas ou separadas) · biblioteca musical com licenças · ducking · kits de marca em lote · personagens com referências autorizadas · assistente (roteiro → storyboard, 3 aberturas, comandos estruturados com prévia e desfazer) · detecção de silêncio com cortes · exportação MP4 H.264/AAC 720p/1080p validada · recuperação de falha do worker · estimativa e controle de custos · isolamento entre usuários |
-| 🟡 **Exige credenciais** (implementado; contrato testado com HTTP simulado; não exercitado contra a API real) | Google Veo (cenas em vídeo) · ElevenLabs (voz pt-BR com tempo por caractere) · OpenAI Images (storyboard) · OpenAI Whisper (transcrição) · Anthropic (roteiro e comandos livres). Sem chave, aparece “Configuração pendente”; com `PROVIDERS_MOCK=1`, provedores simulados geram mídia real marcada “MODO DE TESTE” |
-| ⏳ **Pendente** | Editar vídeo pelo texto · cortes curtos automáticos · máscaras · remoção de fundo · rastreamento · 4K · tradução · geração musical · extração completa dos textos do editor para o dicionário i18n · Docker Compose não validado neste ambiente (sem daemon Docker) |
+| ✅ **Implementado e testado** | Contas e workspaces · upload direto (URL assinada, multipart) · inspeção ffprobe, miniatura, waveform e proxies · timeline com várias trilhas (cortar, dividir, duplicar, excluir, ripple, imã, zoom, mute/solo/lock/hide, keyframes, velocidade, congelar quadro, inverter, marcadores, áreas seguras) · undo/redo · salvamento automático com concorrência otimista · recuperação após recarregar · histórico de versões · 10 templates versionados + templates próprios · efeitos e transições exportáveis · legendas (editar, dividir, unir, SRT/VTT, estilos, gravadas ou separadas) · biblioteca musical com licenças · ducking · kits de marca em lote · personagens com referências autorizadas · assistente (roteiro → storyboard, 3 aberturas, comandos estruturados com prévia e desfazer) · detecção de silêncio com cortes · exportação MP4 H.264/AAC 720p/1080p/**4K** validada · **edição pelo texto** (apagar palavras/frases, “ãh/hum”, pausas → corte em todas as trilhas) · **cortes curtos** sugeridos a partir de vídeo longo → novo projeto 9:16/1:1/4:5 · **máscaras** retangulares/elípticas com borda suave · recuperação de falha do worker · estimativa e controle de custos · isolamento entre usuários · **Docker Compose validado** |
+| 🟡 **Exige credenciais** (implementado; contrato testado com HTTP simulado; não exercitado contra a API real) | Google Veo (cenas em vídeo) · ElevenLabs (voz pt-BR com tempo por caractere) · OpenAI Images (storyboard) · OpenAI Whisper (transcrição) · Anthropic (roteiro, comandos livres e **tradução de legendas**). Sem chave, aparece “Configuração pendente”; com `PROVIDERS_MOCK=1`, provedores simulados geram mídia real marcada “MODO DE TESTE” |
+| ⏳ **Pendente** | Remoção de fundo · rastreamento · máscaras animadas · reenquadramento inteligente dos cortes curtos · geração musical · extração completa dos textos do editor para o dicionário i18n · imagens Docker enxutas |
 
 Detalhes em [`docs/08-pendencias.md`](docs/08-pendencias.md).
 
@@ -54,12 +54,13 @@ redis-server --daemonize yes
 
 ```bash
 cd orion-video-studio
-docker compose -f infra/docker-compose.yml up --build -d
+sh infra/build-images.sh                                   # orion-api, orion-worker, orion-web
+docker compose -f infra/docker-compose.yml up -d
 docker compose -f infra/docker-compose.yml --profile seed run --rm seed
-# web http://localhost:3000 · API http://localhost:4000 · console MinIO http://localhost:9001
+# web http://localhost:3000 · API http://localhost:4000
 ```
 
-A stack sobe Postgres, Redis, MinIO (bucket criado automaticamente), API, worker (sem privilégios, com limites de CPU e memória) e web. **Atenção:** os arquivos foram escritos, mas não executados neste ambiente, por falta de daemon Docker. Confira as tags das imagens no primeiro build.
+A stack sobe Postgres, Redis, API (aplica as migrations), worker (sem privilégios, com limites de CPU e memória) e web. A mídia fica num volume compartilhado (driver local com URLs assinadas); para S3/R2/B2, defina `STORAGE_DRIVER=s3` e as variáveis `S3_*`. Em rede com inspeção TLS: `EXTRA_CA_CERT=/caminho/ca.crt sh infra/build-images.sh` e acrescente `-f infra/docker-compose.ca.yml` ao subir. Validado em 23/10/2026 com os 8 testes E2E contra os contêineres (detalhes e ressalvas em `docs/07-testes.md` e `docs/09-infraestrutura.md`). O MinIO foi removido porque suas imagens deixaram de ser publicadas.
 
 ## Provedores de IA
 
@@ -71,7 +72,8 @@ Coloque as chaves no `.env` (somente servidor): `GEMINI_API_KEY`, `ELEVENLABS_AP
 npm test                                           # unitários + mídia + integração (Postgres/Redis/FFmpeg reais)
 npx vitest run packages                            # só pacotes (rápido)
 RUN_LONG=15 npx vitest run tests/integration/long.test.ts   # exportações de 5 e 15 minutos
-npx playwright test                                # E2E — requer web, API e worker rodando
+RUN_4K=1 npx vitest run tests/integration/long.test.ts      # 2 minutos em 4K
+npx playwright test                                # E2E — requer web, API e worker rodando (local ou Compose)
 npm run typecheck
 ```
 
@@ -98,4 +100,4 @@ Código: proprietário do projeto (defina antes de distribuir). Fontes Inter: SI
 
 ## Evidências
 
-`docs/evidencias/` traz capturas do editor (desktop e móvel), da galeria de templates, do editor de legendas, da exportação e da página de integrações. Traz também **`exemplo-90s-720p.mp4`**, exportado pelo worker a partir do projeto de exemplo e validado: 90,000 s, H.264 + AAC, 720×1280.
+`docs/evidencias/` traz capturas do editor (desktop e móvel), da galeria de templates, do editor de legendas, da exportação e da página de integrações. Traz também `08-previa-x-exportacao-mascara.png`, com a prévia do navegador ao lado do quadro exportado, com e sem máscara, e **`exemplo-90s-720p.mp4`**, exportado pelo worker a partir do projeto de exemplo e validado: 90,000 s, H.264 + AAC, 720×1280.

@@ -5,7 +5,7 @@
 ```
 ┌──────────────┐  same-origin /api/*   ┌──────────────┐   jobs (BullMQ)   ┌──────────────────┐
 │ apps/web     │ ───────────────────▶  │ apps/api     │ ────────────────▶ │ apps/worker      │
-│ Next.js 16   │  (rewrite do Next)    │ Fastify 5    │                   │ FFmpeg/ffprobe   │
+│ Next.js 16   │  (proxy em runtime)   │ Fastify 5    │                   │ FFmpeg/ffprobe   │
 │ editor, UI   │ ◀── URLs assinadas ── │ auth, regras │ ◀── estado (DB) ─ │ mídia, render,   │
 └──────┬───────┘                       └──────┬───────┘                   │ gerações, GC     │
        │ upload/download direto               │                           └───────┬──────────┘

@@ -1,9 +1,11 @@
 import type { Prisma } from '@orion/db'
 import { toNum } from '@orion/db'
 import { assertAssetsInWorkspace, audit, referencedAssetIds, syncTimelineProjection } from '@orion/server'
-import { CreateProjectBody, CreateRevisionBody, SaveProjectBody, TemplateDefinition, type TimelineDoc } from '@orion/shared'
-import { type AssetInfo, applyTemplate, createDocument, docDuration, toSrt, toVtt, validateDoc } from '@orion/timeline'
+import { CreateProjectBody, CreateRevisionBody, DeriveProjectBody, SaveProjectBody, TemplateDefinition, type TimelineDoc } from '@orion/shared'
+import { ASPECT_DIMENSIONS, type AssetInfo, applyTemplate, createDocument, docDuration, extractRange, toSrt, toVtt, validateDoc } from '@orion/timeline'
+import { TRANSLATION_LANGUAGES, type TranslationLanguage, translateSegments, translationAdapter } from '@orion/providers'
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 import { type Deps, HttpError, notFound, requireMember, route } from '../core.ts'
 
 const AUTO_REVISION_MS = 10 * 60 * 1000
@@ -68,6 +70,31 @@ export function registerProjects(app: FastifyInstance, deps: Deps) {
       return p
     })
     return { id: project.id, name: project.name, docVersion: 1, document: doc }
+  })
+
+  route(app, deps, { method: 'POST', url: '/api/projects/:id/derive', summary: 'Criar projeto com um trecho (corte curto)', tag: 'projects', body: DeriveProjectBody }, async ({ user, params, body, req }) => {
+    const p = await loadProject(deps, user.id, params.id!, 'EDITOR')
+    if (p.docVersion !== body.baseVersion) {
+      throw new HttpError(409, 'version_conflict', 'O projeto mudou desde a escolha do trecho. Salve e tente de novo.', { currentVersion: p.docVersion })
+    }
+    const source = p.document as unknown as TimelineDoc
+    if (body.end <= body.start || body.start >= docDuration(source)) throw new HttpError(400, 'invalid_range', 'Trecho fora da duração do projeto.')
+    let doc = extractRange(source, body.start, Math.min(body.end, docDuration(source)))
+    if (body.aspect && body.aspect !== 'custom' && body.aspect !== doc.settings.aspect) {
+      // reenquadramento simples: clipes em "cover" passam a cortar pelo centro
+      doc = { ...doc, settings: { ...doc.settings, aspect: body.aspect, ...ASPECT_DIMENSIONS[body.aspect] } }
+    }
+    doc = { ...doc, scenes: [], meta: { ...doc.meta } }
+    const { issues } = validateDoc(doc)
+    if (issues.some((i) => i.code === 'schema')) throw new HttpError(400, 'invalid_document', 'Não foi possível gerar o corte.', issues)
+    const project = await deps.db.$transaction(async (tx) => {
+      const np = await tx.project.create({ data: { workspaceId: p.workspaceId, name: body.name, document: doc as unknown as Prisma.InputJsonValue, createdById: user.id } })
+      await syncTimelineProjection(tx, np.id, doc, 1, docDuration(doc))
+      await createRevision(tx, np.id, doc, 1, `Corte de “${p.name}”`, user.id)
+      await audit(tx, { workspaceId: p.workspaceId, userId: user.id, action: 'project.derive', targetType: 'project', targetId: np.id, ip: req.ip, meta: { from: p.id, start: body.start, end: body.end } })
+      return np
+    })
+    return { id: project.id, name: project.name, docVersion: 1, durationFlicks: docDuration(doc) }
   })
 
   route(app, deps, { method: 'GET', url: '/api/projects/:id', summary: 'Abrir projeto', tag: 'projects' }, async ({ user, params }) => {
@@ -152,6 +179,24 @@ export function registerProjects(app: FastifyInstance, deps: Deps) {
       await syncTimelineProjection(tx, p.id, doc, newVersion, docDuration(doc))
     })
     return { docVersion: newVersion, document: doc }
+  })
+
+  const TranslateBody = z.object({
+    target: z.enum(Object.keys(TRANSLATION_LANGUAGES) as [TranslationLanguage, ...TranslationLanguage[]]),
+    segments: z.array(z.object({ id: z.string().min(1).max(64), start: z.number().int().nonnegative(), end: z.number().int().positive(), text: z.string().max(500) })).min(1).max(2000),
+  })
+  route(app, deps, { method: 'POST', url: '/api/projects/:id/captions/translate', summary: 'Traduzir legendas (tempos preservados)', tag: 'captions', body: TranslateBody, rateLimit: { max: 10, timeWindow: '1 minute' } }, async ({ user, params, body, req }) => {
+    const p = await loadProject(deps, user.id, params.id!, 'EDITOR')
+    const adapter = translationAdapter(deps.env)
+    if (!adapter) throw new HttpError(409, 'provider_not_configured', 'Tradução com configuração pendente: defina ANTHROPIC_API_KEY no servidor.')
+    let segments
+    try {
+      segments = await translateSegments(adapter, deps.env, body.segments, body.target)
+    } catch (err) {
+      throw new HttpError(502, 'translation_failed', `A tradução falhou: ${(err as Error).message.slice(0, 160)}. Nada foi alterado.`)
+    }
+    await audit(deps.db, { workspaceId: p.workspaceId, userId: user.id, action: 'captions.translate', targetType: 'project', targetId: p.id, ip: req.ip, meta: { target: body.target, count: body.segments.length, provider: adapter.id } })
+    return { target: body.target, mode: adapter.status(deps.env).mode, provider: adapter.label, segments }
   })
 
   for (const fmt of ['srt', 'vtt'] as const) {

@@ -237,4 +237,43 @@ describe('render pipeline', () => {
     // canto superior esquerdo: fundo branco deve continuar visível sob a camada de texto
     expect(await lumaAt(res.outputPath, 1.0, '20:20:10:10')).toBeGreaterThan(200)
   }, 300_000)
+
+  test('shape masks cut the layer, follow its transform and feather with the preview sigma', async () => {
+    const white = (id: string, effects: unknown[], transform = { x: 0.5, y: 0.5, scale: 1, rotation: 0, opacity: 1 }) =>
+      ({ id, type: 'color' as const, name: id, color: '#FFFFFF', start: 0, duration: S(1), transform, fit: 'cover' as const, keyframes: [], effects }) as never
+    const render = async (name: string, clip: never) => {
+      let doc = createDocument({ aspect: '16:9', background: '#000000' })
+      doc = addClip(doc, doc.tracks[0]!.id, clip)
+      const res = await renderProject({
+        doc,
+        preset: { resolution: '720p', captions: 'none', normalizeLoudness: false },
+        workDir: join(work, name),
+        assets: new Map(),
+        fonts: bundledFonts(join(ASSETS, 'fonts')),
+        x264Preset: 'ultrafast',
+      })
+      return res.outputPath
+    }
+    // elipse central 640×360 sem borda suave
+    const hard = await render('mask-hard', white('a', [{ id: 'm', type: 'mask', shape: 'ellipse', x: 0.5, y: 0.5, w: 0.5, h: 0.5, feather: 0, invert: false }]))
+    expect(await lumaAt(hard, 0.5, '10:10:635:355')).toBeGreaterThan(220)
+    expect(await lumaAt(hard, 0.5, '10:10:20:20')).toBeLessThan(25)
+    // fora da elipse, mas dentro do retângulo que a contém
+    expect(await lumaAt(hard, 0.5, '10:10:340:190')).toBeLessThan(25)
+    // retângulo invertido: centro escuro, canto claro
+    const inv = await render('mask-inv', white('b', [{ id: 'm', type: 'mask', shape: 'rect', x: 0.5, y: 0.5, w: 0.5, h: 0.5, feather: 0, invert: true }]))
+    expect(await lumaAt(inv, 0.5, '10:10:635:355')).toBeLessThan(25)
+    expect(await lumaAt(inv, 0.5, '10:10:20:20')).toBeGreaterThan(220)
+    // borda suave: na fronteira da elipse a cobertura fica perto de 50%
+    const soft = await render('mask-soft', white('c', [{ id: 'm', type: 'mask', shape: 'ellipse', x: 0.5, y: 0.5, w: 0.5, h: 0.5, feather: 0.1, invert: false }]))
+    const edge = await lumaAt(soft, 0.5, '4:4:958:358')
+    expect(edge).toBeGreaterThan(80)
+    expect(edge).toBeLessThan(170)
+    // a máscara acompanha a camada: clipe reduzido à metade e deslocado para x=0,25
+    const moved = await render('mask-moved', white('d', [{ id: 'm', type: 'mask', shape: 'rect', x: 0.5, y: 0.5, w: 0.5, h: 0.5, feather: 0, invert: false }], { x: 0.25, y: 0.5, scale: 0.5, rotation: 0, opacity: 1 }))
+    // camada 640×360 centrada em (320, 360); máscara = 320×180 centrada no mesmo ponto
+    expect(await lumaAt(moved, 0.5, '10:10:315:355')).toBeGreaterThan(220)
+    expect(await lumaAt(moved, 0.5, '10:10:140:355')).toBeLessThan(25)
+    expect(await lumaAt(moved, 0.5, '10:10:635:355')).toBeLessThan(25)
+  }, 300_000)
 })

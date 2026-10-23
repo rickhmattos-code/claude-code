@@ -15,6 +15,8 @@ const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, len: number, op
 export const ConfigSchema = z.object({
   API_PORT: z.coerce.number().default(4000),
   WEB_ORIGIN: z.string().default('http://localhost:3000'),
+  /** proxies cujo X-Forwarded-For é aceito (lista de IPs/CIDRs ou loopback, linklocal, uniquelocal) */
+  TRUST_PROXY: z.string().default('loopback,uniquelocal'),
   API_PUBLIC_URL: z.string().default('http://localhost:4000'),
   MAX_PROJECT_SECONDS: z.coerce.number().default(1800),
   MAX_UPLOAD_BYTES: z.coerce.number().default(4 * 1024 ** 3),

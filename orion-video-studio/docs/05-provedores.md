@@ -8,7 +8,7 @@ Todas as chaves ficam **somente** no `.env` da API e do worker. O frontend nunca
 | ElevenLabs | Narração pt-BR com tempo por caractere | `ELEVENLABS_API_KEY` | 🟡 Contrato testado com HTTP simulado; sem chave real |
 | OpenAI Images | Imagens de storyboard (`gpt-image-1`) | `OPENAI_API_KEY` | 🟡 Idem |
 | OpenAI Whisper | Transcrição com tempo por palavra e segmento | `OPENAI_API_KEY` | 🟡 Idem; o worker divide o áudio em blocos de 10 min (limite de 25 MB) |
-| Anthropic Claude | Roteiro, aberturas e interpretação de comandos livres | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | 🟡 Saída validada por schema; sem chave, o assistente usa o organizador local (rotulado “sem IA”) |
+| Anthropic Claude | Roteiro, aberturas, interpretação de comandos livres e **tradução de legendas** | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | 🟡 Saída validada por schema; sem chave, o assistente usa o organizador local (rotulado “sem IA”) |
 | Geração musical | — | — | ⏳ Interface reservada; só será ativada com API oficial, credenciais e termos que permitam sincronização comercial |
 | Provedores simulados | Testes automatizados e demonstração offline | `PROVIDERS_MOCK=1` | ✅ Geram mídia real marcada “MODO DE TESTE”, custo 0, sem tempo por palavra inventado |
 
@@ -32,6 +32,7 @@ Todas as chaves ficam **somente** no `.env` da API e do worker. O frontend nunca
 
 **Anthropic** (`anthropic.ts`)
 - `POST https://api.anthropic.com/v1/messages`, cabeçalhos `x-api-key` e `anthropic-version: 2023-06-01`.
+- **Tradução de legendas** (`translate.ts`, rota `POST /api/projects/:id/captions/translate`): lotes de 60 legendas em JSON `{items:[{i,text}]}`, resposta validada por schema; se faltar qualquer item, a tradução falha e nada muda. Os tempos são preservados e o tempo por palavra é descartado. Sem chave, a interface mostra “Configuração pendente”; com `PROVIDERS_MOCK=1`, o simulador apenas prefixa `[TESTE→idioma]` (não traduz). Como no assistente, a chamada é síncrona e **não passa pelo orçamento de gerações** (custo por token sem preço verificado; ver pendências).
 
 ## Preços e estimativa de custo
 

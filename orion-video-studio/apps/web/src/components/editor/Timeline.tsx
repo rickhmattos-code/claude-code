@@ -49,7 +49,7 @@ export interface DraggedAsset {
 export const ASSET_MIME = 'application/x-orion-asset'
 
 const peaksCache = new Map<string, Promise<{ peaksPerSecond: number; peaks: number[] } | null>>()
-function loadPeaks(url: string, assetId: string) {
+export function loadPeaks(url: string, assetId: string) {
   let p = peaksCache.get(assetId)
   if (!p) {
     p = fetch(url)

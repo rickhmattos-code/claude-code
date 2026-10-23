@@ -18,6 +18,9 @@ import {
   frameDuration,
   isMediaClip,
   keyframePiecewise,
+  maskGeometry,
+  masksOf,
+  type MaskEffect,
   num,
   piecewiseExpr,
   productExpr,
@@ -130,9 +133,25 @@ function effectFilters(effects: Effect[], outH: number): string[] {
         break
       case 'denoise':
         break // áudio
+      case 'mask':
+        break // aplicada depois do ajuste de tamanho (maskFilters)
     }
   }
   return out
+}
+
+/** Fonte lavfi que gera a máscara (1 frame calculado e repetido) para uma camada w×h. */
+export function maskSource(m: MaskEffect, w: number, h: number, fpsStr: string, durationArg: string): string {
+  const g = maskGeometry(m, w, h)
+  const X = '(X+0.5)'
+  const Y = '(Y+0.5)'
+  const inside =
+    m.shape === 'ellipse'
+      ? `lte(pow((${X}-${num(g.cx)})/${num(g.rx)},2)+pow((${Y}-${num(g.cy)})/${num(g.ry)},2),1)`
+      : `lte(abs(${X}-${num(g.cx)}),${num(g.rx)})*lte(abs(${Y}-${num(g.cy)}),${num(g.ry)})`
+  const lum = m.invert ? `255-255*${inside}` : `255*${inside}`
+  const blur = g.sigma > 0.05 ? `,gblur=sigma=${num(g.sigma)}` : ''
+  return `color=c=black:s=${w}x${h}:r=${fpsStr}:d=1,format=gray,trim=end_frame=1,geq=lum='${lum}'${blur},loop=loop=-1:size=1,trim=duration=${durationArg},setpts=PTS-STARTPTS`
 }
 
 interface Factors {
@@ -266,12 +285,36 @@ export function buildChunkCommand(ctx: RenderContext, chunk: ChunkPlan, outPath:
         chain.push('setpts=PTS-STARTPTS', 'format=rgba', `drawtext=${dt.join(':')}`)
       }
 
+      // máscaras: multiplicam o alfa da camada já ajustada (antes de escala/rotação, então acompanham o clipe)
+      const clipInput = inputIndex
+      let source = `${clipInput}:v`
+      const masks = clip.type === 'text' ? [] : masksOf(clip.effects)
+      if (masks.length) {
+        const pre = `${L}p`
+        filters.push(`[${source}]${[...chain, 'format=rgba'].join(',')}[${pre}]`)
+        chain.length = 0
+        const maskLabels: string[] = []
+        for (const m of masks) {
+          inputIndex++
+          args.push('-f', 'lavfi', '-i', maskSource(m, srcW, srcH, fpsStr, fs(vis)))
+          maskLabels.push(`${inputIndex}:v`)
+        }
+        let acc = maskLabels[0]!
+        maskLabels.slice(1).forEach((lbl, i) => {
+          const out = `${L}mm${i}`
+          filters.push(`[${acc}][${lbl}]blend=all_mode=multiply[${out}]`)
+          acc = out
+        })
+        filters.push(`[${pre}]split[${L}c][${L}c2]`, `[${L}c2]alphaextract[${L}a]`, `[${L}a][${acc}]blend=all_mode=multiply[${L}am]`, `[${L}c][${L}am]alphamerge[${L}m]`)
+        source = `${L}m`
+      }
+
       const f = clipFactors(clip)
       const T = `(t+${num(sec(lead))})`
       // opacidade: constante → colorchannelmixer; variável → sendcmd por frame
       const opConst = f.opacity.every(isConst)
       const rotConst = isConst(f.rotation)
-      const needsAlpha = !opConst || f.opacity.reduce((a, p) => a * p.before, 1) < 1 || !rotConst || f.rotation.before !== 0 || clip.effects.some((e) => e.type === 'chromakey') || clip.type === 'text'
+      const needsAlpha = !opConst || f.opacity.reduce((a, p) => a * p.before, 1) < 1 || !rotConst || f.rotation.before !== 0 || clip.effects.some((e) => e.type === 'chromakey') || clip.type === 'text' || masks.length > 0
       if (needsAlpha) chain.push('format=rgba')
       if (opConst) {
         const v = f.opacity.reduce((a, p) => a * p.before, 1)
@@ -306,7 +349,7 @@ export function buildChunkCommand(ctx: RenderContext, chunk: ChunkPlan, outPath:
         chain.push(`scale=w='max(2,iw*(${e}))':h='max(2,ih*(${e}))':eval=frame`)
       }
       chain.push(`setpts=PTS+${fs(off)}/TB`)
-      filters.push(`[${inputIndex}:v]${chain.join(',')}[${L}]`)
+      filters.push(`[${source}]${chain.join(',') || 'null'}[${L}]`)
       inputIndex++
       const To = `(t-${num(sec(off))}+${num(sec(lead))})`
       const xe = sumExpr(f.x.map((p) => piecewiseExpr(p, To)))

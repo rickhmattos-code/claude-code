@@ -64,6 +64,14 @@ export const EFFECT_SUPPORT: Record<EffectType, EffectSupport> = {
     notes:
       'Prévia recorta por distância de cor em resolução reduzida; exportação opera em YUV.',
   },
+  mask: {
+    label: 'Máscara (retângulo ou elipse)',
+    preview: 'exact',
+    export: 'ready',
+    ffmpeg: 'geq + gblur + alphamerge',
+    notes:
+      'Mesma geometria e mesmo desvio-padrão de borda na prévia (canvas) e na exportação; a máscara acompanha o clipe (posição, escala e rotação).',
+  },
   denoise: {
     label: 'Redução de ruído (áudio)',
     preview: 'none',
@@ -112,9 +120,9 @@ export const MOTION_SUPPORT = {
 
 export const PLANNED_EFFECTS = [
   {
-    label: 'Máscaras (retângulo/elipse com borda suave)',
+    label: 'Máscaras animadas por keyframe e formas livres',
     phase: 5,
-    dependency: 'alphamerge com máscara gerada; editor de forma',
+    dependency: 'interpolação da geometria por frame; editor de caminho',
     cost: 'CPU apenas',
   },
   {

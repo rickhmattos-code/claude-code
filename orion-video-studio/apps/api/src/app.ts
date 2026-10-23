@@ -20,7 +20,8 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean } = {}): Pro
         }
       : false,
     bodyLimit: 2 * 1024 * 1024 * 10,
-    trustProxy: true,
+    // só proxies conhecidos (a web e balanceadores internos); clientes diretos não forjam o IP
+    trustProxy: deps.config.TRUST_PROXY.split(',').map((x) => x.trim()).filter(Boolean),
     // encerra conexões keep-alive ociosas ao desligar (shutdown limpo)
     forceCloseConnections: 'idle',
     // tokens de URL assinada são longos (payload + HMAC)

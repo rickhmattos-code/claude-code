@@ -104,7 +104,7 @@ const exists = async (p: string) => {
 const hash = (s: string) => createHash('sha256').update(s).digest('hex').slice(0, 16)
 
 export function outputDimensions(doc: TimelineDoc, resolution: RenderPreset['resolution']): { width: number; height: number } {
-  const target = resolution === '1080p' ? 1080 : 720
+  const target = resolution === '2160p' ? 2160 : resolution === '1080p' ? 1080 : 720
   const { width, height } = doc.settings
   const short = Math.min(width, height)
   const scale = target / short

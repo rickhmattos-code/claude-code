@@ -12,11 +12,12 @@ import {
   removeCaption,
   secondsToFlicks,
   splitCaption,
+  toSrt,
   updateCaption,
 } from '@orion/timeline'
 import { Badge, Button, Field, Input, Select, Slider, TextArea, useToast } from '@orion/ui'
 import { produce } from 'immer'
-import { Download, FileUp, Merge, Mic2, Plus, Scissors, Trash2 } from 'lucide-react'
+import { Download, FileUp, Languages, Merge, Mic2, Plus, Scissors, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { api, errorMessage } from '@/lib/api'
 import type { ProvidersDto } from '@/lib/types'
@@ -139,6 +140,7 @@ export function CaptionsPanel() {
           </>
         )}
       </section>
+      <TranslateSection providers={providers} />
       <label className="flex items-center gap-2">
         <input type="checkbox" checked={doc.captions.burnIn} onChange={(e) => apply((d) => ({ ...d, captions: { ...d.captions, burnIn: e.target.checked } }))} />
         Mostrar na prévia e gravar no vídeo
@@ -219,6 +221,116 @@ export function CaptionsPanel() {
         })}
       </ul>
     </div>
+  )
+}
+
+const LANGS: Array<[string, string]> = [
+  ['en', 'Inglês'],
+  ['es', 'Espanhol'],
+  ['fr', 'Francês'],
+  ['it', 'Italiano'],
+  ['de', 'Alemão'],
+  ['pt-PT', 'Português (Portugal)'],
+  ['pt-BR', 'Português (Brasil)'],
+]
+
+/** Tradução por IA: tempos preservados; aplicar substitui o texto (com desfazer) ou baixa um SRT. */
+function TranslateSection({ providers }: { providers: ProvidersDto | null }) {
+  const doc = useDoc()
+  const { apply, projectId } = useEditor()
+  const toast = useToast()
+  const [target, setTarget] = useState('en')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ target: string; mode: string; segments: CaptionSegment[] } | null>(null)
+  const t = providers?.translation
+  const segs = doc.captions.segments
+  async function translate() {
+    setBusy(true)
+    try {
+      const r = await api<{ target: string; mode: string; segments: CaptionSegment[] }>(`/projects/${projectId}/captions/translate`, {
+        body: { target, segments: segs.map((s) => ({ id: s.id, start: s.start, end: s.end, text: s.text })) },
+      })
+      setResult(r)
+    } catch (err) {
+      toast(errorMessage(err), 'danger')
+    } finally {
+      setBusy(false)
+    }
+  }
+  function replace() {
+    if (!result) return
+    const byId = new Map(result.segments.map((s) => [s.id, s.text]))
+    apply((d) =>
+      produce(d, (x) => {
+        for (const s of x.captions.segments) {
+          const tx = byId.get(s.id)
+          if (tx !== undefined) {
+            s.text = tx
+            s.words = undefined
+          }
+        }
+      }),
+    )
+    setResult(null)
+    toast('Legendas substituídas pela tradução. Use Desfazer para voltar ao original.', 'ok')
+  }
+  function download() {
+    if (!result) return
+    const blob = new Blob([toSrt(result.segments)], { type: 'application/x-subrip;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `legendas-${result.target}.srt`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+  return (
+    <section className="rounded-lg border border-[var(--color-border)] p-3 flex flex-col gap-2" aria-label="Tradução de legendas">
+      <h3 className="font-medium flex items-center gap-1">
+        <Languages size={14} /> Traduzir legendas
+      </h3>
+      {!t?.configured ? (
+        <p className="text-[12px] text-[var(--color-muted)]">
+          <Badge tone="warn">Configuração pendente</Badge> Defina ANTHROPIC_API_KEY no servidor para traduzir.
+        </p>
+      ) : segs.length === 0 ? (
+        <p className="text-[12px] text-[var(--color-muted)]">Nenhuma legenda para traduzir.</p>
+      ) : (
+        <>
+          <div className="flex gap-2">
+            <Select aria-label="Idioma de destino" value={target} onChange={(e) => setTarget(e.target.value)}>
+              {LANGS.map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </Select>
+            <Button size="sm" variant="primary" loading={busy} onClick={translate}>
+              Traduzir {segs.length} {t.mode === 'mock' ? '(MODO DE TESTE)' : ''}
+            </Button>
+          </div>
+          <p className="text-[11px] text-[var(--color-muted)]">Os tempos são mantidos. O destaque palavra a palavra deixa de valer no texto traduzido. Revise antes de publicar.</p>
+          {result && (
+            <div className="flex flex-col gap-2">
+              <ul className="max-h-40 overflow-auto text-[12px] flex flex-col gap-1" aria-label="Prévia da tradução">
+                {result.segments.slice(0, 50).map((s, i) => (
+                  <li key={s.id}>
+                    <span className="text-[var(--color-muted)] line-through mr-1">{segs[i]?.text}</span> {s.text}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <Button size="sm" variant="primary" onClick={replace}>
+                  Substituir legendas
+                </Button>
+                <Button size="sm" icon={<Download size={14} />} onClick={download}>
+                  Baixar SRT ({result.target})
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 

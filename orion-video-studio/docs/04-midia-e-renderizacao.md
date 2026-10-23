@@ -59,7 +59,7 @@ Referência: a recomendação ITU-R BT.1359 tolera de +45 ms a −125 ms de dess
 | Granulação | Aproximada | ✅ `noise` | Padrão aleatório |
 | Chroma key | Aproximada (resolução reduzida) | ✅ `chromakey` | |
 | Redução de ruído (áudio) | Não exibida | ✅ `afftdn` | |
-| Máscaras | — | ⏳ Fase 5 | Não aparece na interface |
+| Máscara (retângulo/elipse, borda suave, inverter) | Exata (mesma geometria e sigma) | ✅ `geq` + `gblur` + `alphamerge` | Acompanha posição, escala e rotação do clipe; várias máscaras se multiplicam. Formas livres e máscara animada: ⏳ |
 | Remoção de fundo por IA | — | ⏳ Fase 5 | Requer GPU ou serviço pago |
 | Rastreamento | — | ⏳ Fase 5 | OpenCV em worker dedicado |
 

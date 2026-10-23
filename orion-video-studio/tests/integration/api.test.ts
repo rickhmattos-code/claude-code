@@ -176,6 +176,31 @@ describe('projetos, isolamento e concorrência', () => {
     expect(back.json.document.tracks[0].clips).toHaveLength(3)
   })
 
+  test('corte curto: cria novo projeto com o trecho, exige versão atual e respeita o isolamento', async () => {
+    const cur = await A.get(`/api/projects/${projectId}`)
+    const body = { name: 'Corte 1', baseVersion: cur.json.docVersion, start: S(2), end: S(8), aspect: '1:1' }
+    expect((await A.post(`/api/projects/${projectId}/derive`, { ...body, baseVersion: cur.json.docVersion - 1 })).status).toBe(409)
+    expect((await B.post(`/api/projects/${projectId}/derive`, body)).status).toBe(404)
+    const r = await A.post(`/api/projects/${projectId}/derive`, body)
+    expect(r.status).toBe(200)
+    expect(r.json.durationFlicks).toBe(S(6))
+    const np = await A.get(`/api/projects/${r.json.id}`)
+    expect(np.json.document.settings).toMatchObject({ aspect: '1:1', width: 1080, height: 1080 })
+    expect(np.json.document.tracks[0].clips[0].start).toBe(0)
+    // projeto de origem intacto
+    expect((await A.get(`/api/projects/${projectId}`)).json.docVersion).toBe(cur.json.docVersion)
+  })
+
+  test('tradução de legendas: simulador marcado, tempos preservados, isolamento', async () => {
+    const segments = [{ id: 's1', start: S(3), end: S(6), text: 'Legenda de teste' }]
+    expect((await B.post(`/api/projects/${projectId}/captions/translate`, { target: 'en', segments })).status).toBe(404)
+    const r = await A.post(`/api/projects/${projectId}/captions/translate`, { target: 'en', segments })
+    expect(r.status).toBe(200)
+    expect(r.json.mode).toBe('mock')
+    expect(r.json.segments).toEqual([{ id: 's1', start: S(3), end: S(6), text: '[TESTE→en] Legenda de teste' }])
+    expect((await A.get('/api/providers')).json.translation).toMatchObject({ configured: true, mode: 'mock' })
+  })
+
   test('exporta vídeo real > 60 s; editar durante a exportação não altera o resultado', async () => {
     const cur = await A.get(`/api/projects/${projectId}`)
     const key = `render-${Date.now()}`

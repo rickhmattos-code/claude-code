@@ -12,6 +12,7 @@ import {
   localPlan,
   providerStatuses,
   scriptAdapter,
+  translationAdapter,
 } from '@orion/providers'
 import { audit, monthlySpend } from '@orion/server'
 import {
@@ -300,6 +301,10 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
       image: keep(IMAGE_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
       tts: keep(TTS_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
       transcription: keep(TRANSCRIPTION_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
+      translation: (() => {
+        const t = translationAdapter(env)
+        return t ? { configured: true, label: t.label, mode: t.status(env).mode } : { configured: false, label: 'Anthropic Claude', mode: 'pending-config' }
+      })(),
     }
   })
   route(app, deps, { method: 'GET', url: '/api/workspaces/:ws/usage', summary: 'Consumo do mês (estimado × confirmado)', tag: 'usage' }, async ({ user, params }) => {

@@ -6,7 +6,7 @@
 | Autorização por workspace | `requireMember(user, workspace, papel)` em toda rota; sem acesso → 404 |
 | Proteção entre usuários | Recursos carregados pelo ID e conferidos pela membership; documentos não podem citar ativos de outro workspace |
 | CSRF | Mutações com cabeçalho `Origin` diferente de `WEB_ORIGIN`/`API_PUBLIC_URL` → 403; cookie `SameSite=Lax` |
-| Rate limiting | Global de 600/min por IP (Redis); login e registro 10/min; uploads 120/min; exportações 20/min; gerações 60/min |
+| Rate limiting | Global de 600/min por IP (Redis); login e registro 10/min; uploads 120/min; exportações 20/min; gerações 60/min; tradução 10/min. O IP vem de `X-Forwarded-For` **só** quando a conexão chega de um proxy listado em `TRUST_PROXY` (padrão: loopback e redes privadas). Antes qualquer cliente podia forjar o cabeçalho. Pendência: a web (Next) só preenche `X-Forwarded-For` quando ele não vem na requisição; sem um proxy reverso que o sobrescreva, um cliente pode forjá-lo através da web. |
 | Segredos | Somente no servidor; `GET /api/providers` informa “configurado ou pendente” sem valores; teste garante que a chave não aparece em respostas |
 | Validação de uploads | Tipo MIME na lista permitida, tamanho máximo (`MAX_UPLOAD_BYTES`), cota do workspace, tamanho conferido na conclusão, ffprobe com protocolos restritos, formato permitido, tipo real igual ao declarado |
 | Validação de URLs | Download do Veo só aceita o host oficial; chaves de objeto geradas pelo servidor; driver local impede path traversal |

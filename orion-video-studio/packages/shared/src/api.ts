@@ -31,6 +31,16 @@ export const SaveProjectBody = z.object({
   name: z.string().min(1).max(120).optional(),
 })
 
+/** Novo projeto com um trecho [start, end) do projeto atual (cortes curtos) */
+export const DeriveProjectBody = z.object({
+  name: z.string().min(1).max(120),
+  /** versão do documento em que o trecho foi escolhido; diferente => 409 */
+  baseVersion: z.number().int().positive(),
+  start: z.number().int().nonnegative(),
+  end: z.number().int().positive(),
+  aspect: AspectPreset.optional(),
+})
+
 export const CreateRevisionBody = z.object({
   reason: z.string().min(1).max(200),
 })
@@ -80,7 +90,7 @@ export const DeriveAssetBody = z.discriminatedUnion('op', [
 ])
 
 export const RenderPreset = z.object({
-  resolution: z.enum(['720p', '1080p']),
+  resolution: z.enum(['720p', '1080p', '2160p']),
   captions: z.enum(['none', 'burn', 'sidecar', 'both']),
   normalizeLoudness: z.boolean().default(true),
 })

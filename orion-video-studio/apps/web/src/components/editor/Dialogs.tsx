@@ -18,7 +18,7 @@ const STATUS: Record<RenderDto['status'], { label: string; tone: 'neutral' | 'ok
 export function ExportDialog({ open, onClose, flush }: { open: boolean; onClose: () => void; flush: () => Promise<boolean> }) {
   const { projectId } = useEditor()
   const toast = useToast()
-  const [resolution, setResolution] = useState<'720p' | '1080p'>('1080p')
+  const [resolution, setResolution] = useState<'720p' | '1080p' | '2160p'>('1080p')
   const [captions, setCaptions] = useState<'none' | 'burn' | 'sidecar' | 'both'>('burn')
   const [loudness, setLoudness] = useState(true)
   const [current, setCurrent] = useState<RenderDto | null>(null)
@@ -79,10 +79,15 @@ export function ExportDialog({ open, onClose, flush }: { open: boolean; onClose:
     >
       <div className="grid gap-5 md:grid-cols-2">
         <div className="flex flex-col gap-3 text-sm">
-          <Field label="Resolução" htmlFor="res" hint="MP4 H.264 + AAC. 4K será liberado após validação de recursos.">
-            <Select id="res" value={resolution} onChange={(e) => setResolution(e.target.value as '720p' | '1080p')}>
+          <Field
+            label="Resolução"
+            htmlFor="res"
+            hint={resolution === '2160p' ? '4K: medido a ~0,6× o tempo real em 4 vCPU (≈ 5× mais lento que 720p), pico de 1,6 GB de memória e ~58 MB por minuto. Mídias abaixo de 4K são ampliadas.' : 'MP4 H.264 + AAC.'}
+          >
+            <Select id="res" value={resolution} onChange={(e) => setResolution(e.target.value as '720p' | '1080p' | '2160p')}>
               <option value="1080p">1080p (Full HD)</option>
               <option value="720p">720p (HD)</option>
+              <option value="2160p">2160p (4K)</option>
             </Select>
           </Field>
           <Field label="Legendas" htmlFor="cap">

@@ -96,8 +96,8 @@ test.describe.serial('fluxo principal do editor', () => {
     await page.getByRole('button', { name: /Título/ }).click()
     await waitSaved(page)
 
-    // quadro da prévia em t = 2 s
-    await page.locator('[role=slider][aria-label="Posição do cursor"]').click({ position: { x: 2 * 40 + 1, y: 10 } })
+    // quadro da prévia em t = 7 s (dentro do vídeo: o trecho 0–5 s foi excluído no teste anterior)
+    await page.locator('[role=slider][aria-label="Posição do cursor"]').click({ position: { x: 7 * 40 + 1, y: 10 } })
     await page.waitForFunction(() => (document.querySelector('canvas')?.dataset.media ?? '').includes('video:4'), null, { timeout: 60_000 })
     await page.waitForTimeout(1500)
     const dataUrl = await page.evaluate(() => document.querySelector('canvas')!.toDataURL('image/png'))
@@ -128,6 +128,68 @@ test.describe.serial('fluxo principal do editor', () => {
     const mean = diff / a.length
     console.log(`diferença média de luminância prévia × exportação: ${mean.toFixed(2)} / 255`)
     expect(mean).toBeLessThan(12)
+  })
+
+  test('máscara: a prévia recorta igual ao arquivo exportado', async ({ page, request }) => {
+    await login(page)
+    await page.goto(projectUrl)
+    // o clipe de vídeo (o título adicionado antes não aceita máscara)
+    await page.locator('[aria-label^="Clipe video_30fps"]').first().click()
+    await page.getByLabel('Adicionar efeito').selectOption('mask')
+    await expect(page.getByText('Máscara (retângulo ou elipse)')).toBeVisible()
+    await waitSaved(page)
+    await page.locator('[role=slider][aria-label="Posição do cursor"]').click({ position: { x: 8 * 40 + 1, y: 10 } })
+    await page.waitForFunction(() => (document.querySelector('canvas')?.dataset.media ?? '').includes('video:4'), null, { timeout: 60_000 })
+    await page.waitForTimeout(1500)
+    const dataUrl = await page.evaluate(() => document.querySelector('canvas')!.toDataURL('image/png'))
+    const previewPng = join(tmp, 'preview-mask.png')
+    writeFileSync(previewPng, Buffer.from(dataUrl.split(',')[1]!, 'base64'))
+    const headerTime = await page.locator('text=/\\d{2}:\\d{2}:\\d{2}:\\d{2} \\//').first().innerText()
+    await page.getByRole('button', { name: 'Exportar' }).click()
+    await page.getByLabel('Resolução').selectOption('720p')
+    await page.getByRole('button', { name: 'Iniciar exportação' }).click()
+    await expect(page.getByText('Concluído').first()).toBeVisible({ timeout: 240_000 })
+    const href = await page.getByRole('link', { name: /Baixar MP4/ }).first().getAttribute('href')
+    const mp4 = join(tmp, 'export-mask.mp4')
+    writeFileSync(mp4, await (await request.get(href!)).body())
+    const [hh, mm, ss, ff] = headerTime.split(' ')[0]!.split(':').map(Number)
+    const t = hh! * 3600 + mm! * 60 + ss! + ff! / 30
+    const exportPng = join(tmp, 'export-mask.png')
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', t.toFixed(4), '-i', mp4, '-frames:v', '1', exportPng])
+    const a = grayPixels(previewPng)
+    const b = grayPixels(exportPng)
+    let diff = 0
+    for (let i = 0; i < a.length; i++) diff += Math.abs(a[i]! - b[i]!)
+    const mean = diff / a.length
+    // cantos fora da elipse ficam pretos nos dois; o centro mostra o vídeo
+    expect(a[0]).toBeLessThan(20)
+    expect(b[0]).toBeLessThan(20)
+    let centerSum = 0
+    for (let y = 24; y < 32; y++) for (let x = 10; x < 22; x++) centerSum += b[y * 32 + x]!
+    expect(centerSum / 96).toBeGreaterThan(60)
+    console.log(`máscara — diferença média prévia × exportação: ${mean.toFixed(2)} / 255`)
+    expect(mean).toBeLessThan(12)
+  })
+
+  test('edição pelo texto: excluir uma frase corta o trecho em todas as trilhas', async ({ page }) => {
+    await login(page)
+    await page.goto(projectUrl)
+    await page.getByRole('tab', { name: 'Legendas' }).click()
+    const srt = join(tmp, 'frases.srt')
+    writeFileSync(srt, '1\n00:00:01,000 --> 00:00:03,000\nPrimeira frase\n\n2\n00:00:06,000 --> 00:00:09,000\nSegunda frase\n')
+    await page.setInputFiles('input[aria-label="Arquivo de legendas"]', srt)
+    await expect(page.getByText('2 legendas importadas.')).toBeVisible()
+    const total = async () => (await page.locator('text=/\\d{2}:\\d{2}:\\d{2}:\\d{2} \\//').first().innerText()).split('/ ')[1]!.trim()
+    const before = await total()
+    await page.getByRole('tab', { name: 'Transcrição' }).click()
+    const transcript = page.getByLabel('Transcrição editável')
+    await expect(transcript.getByText('Segunda frase')).toBeVisible()
+    await transcript.locator('div', { hasText: 'Segunda frase' }).last().getByLabel('frase inteira').check()
+    await page.getByRole('button', { name: /Excluir seleção \(3 s\)/ }).click()
+    await expect(transcript.getByText('Segunda frase')).toHaveCount(0)
+    const after = await total()
+    expect(after).not.toBe(before)
+    await waitSaved(page)
   })
 
   test('templates: projeto a partir de template com campo preenchido', async ({ page }) => {

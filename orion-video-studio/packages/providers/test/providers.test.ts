@@ -11,6 +11,8 @@ import {
   localPlan,
   openAiTranscriptionAdapter,
   providerStatuses,
+  translateSegments,
+  translationAdapter,
   veoAdapter,
 } from '../src/index.ts'
 
@@ -134,4 +136,31 @@ describe('assistant', () => {
 
 test('pronunciation dictionary substitutes whole words only', () => {
   expect(applyPronunciation('ORION e ORIONTE', { ORION: 'Órion' })).toBe('Órion e ORIONTE')
+})
+
+describe('caption translation', () => {
+  const segs = [
+    { id: 'a', start: 0, end: 10, text: 'Olá, mundo', words: [{ text: 'Olá,', start: 0, end: 5 }] },
+    { id: 'b', start: 10, end: 20, text: 'Até logo' },
+  ]
+  test('keeps timings, drops word timing and maps answers by index', async () => {
+    const fake = { ...anthropicAdapter, complete: async () => 'Aqui: {"items":[{"i":1,"text":"See you"},{"i":0,"text":"Hello, world"}]}' }
+    const out = await translateSegments(fake, {}, segs, 'en')
+    expect(out.map((s) => [s.id, s.start, s.end, s.text, s.words])).toEqual([
+      ['a', 0, 10, 'Hello, world', undefined],
+      ['b', 10, 20, 'See you', undefined],
+    ])
+  })
+  test('an incomplete answer fails instead of leaving untranslated lines', async () => {
+    const fake = { ...anthropicAdapter, complete: async () => '{"items":[{"i":0,"text":"Hello"}]}' }
+    await expect(translateSegments(fake, {}, segs, 'en')).rejects.toThrow(/incompleta/)
+  })
+  test('no credentials → no translator; mock only with PROVIDERS_MOCK=1 and clearly marked', async () => {
+    expect(translationAdapter({})).toBeNull()
+    const mock = translationAdapter({ PROVIDERS_MOCK: '1' })!
+    expect(mock.status({ PROVIDERS_MOCK: '1' }).mode).toBe('mock')
+    const out = await translateSegments(mock, {}, segs, 'es')
+    expect(out[0]!.text).toBe('[TESTE→es] Olá, mundo')
+    expect(translationAdapter({ ANTHROPIC_API_KEY: 'k', PROVIDERS_MOCK: '1' })!.id).toBe('anthropic')
+  })
 })

@@ -2,7 +2,7 @@
 import type { TimelineDoc } from '@orion/shared'
 import { FLICKS_PER_SECOND, addMarker, deleteClips, docDuration, duplicateClip, frameDuration, splitClip } from '@orion/timeline'
 import { Badge, Button, Input, Spinner, Tabs, ToolButton, useToast } from '@orion/ui'
-import { ArrowLeft, AudioLines, Bookmark, Captions, Copy, Download, Film, History, LayoutTemplate, Magnet, Mic, Palette, Redo2, Scissors, Sparkles, Trash2, Type, Undo2, Wand2 } from 'lucide-react'
+import { ArrowLeft, AudioLines, Bookmark, Captions, Copy, Download, FileText, Film, History, LayoutTemplate, Magnet, Mic, Palette, Redo2, Scissors, Sparkles, Trash2, Type, Undo2, Wand2 } from 'lucide-react'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, api, errorMessage } from '@/lib/api'
@@ -14,12 +14,13 @@ import { MediaPanel } from './panels/MediaPanel'
 import { AssistantPanel, BrandPanel, TemplatesPanel } from './panels/ProjectPanels'
 import { ScenesPanel } from './panels/ScenesPanel'
 import { AudioPanel, TextPanel } from './panels/TextAudioPanels'
+import { TranscriptPanel } from './panels/TranscriptPanel'
 import { VoicePanel } from './panels/VoicePanel'
 import { Preview } from './Preview'
 import { useDoc, useEditor } from './store'
 import { Timeline } from './Timeline'
 
-type Tab = 'media' | 'text' | 'audio' | 'captions' | 'voice' | 'ai' | 'templates' | 'brand' | 'assistant'
+type Tab = 'media' | 'transcript' | 'text' | 'audio' | 'captions' | 'voice' | 'ai' | 'templates' | 'brand' | 'assistant'
 type MobileView = 'panel' | 'timeline' | 'inspector'
 
 const draftKey = (id: string) => `orion:draft:${id}`
@@ -249,6 +250,7 @@ export function Editor({ projectId }: { projectId: string }) {
 
   const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
     { id: 'media', label: 'Mídia', icon: <Film size={14} /> },
+    { id: 'transcript', label: 'Transcrição', icon: <FileText size={14} /> },
     { id: 'text', label: 'Texto', icon: <Type size={14} /> },
     { id: 'audio', label: 'Música', icon: <AudioLines size={14} /> },
     { id: 'captions', label: 'Legendas', icon: <Captions size={14} /> },
@@ -260,6 +262,7 @@ export function Editor({ projectId }: { projectId: string }) {
   ]
   const panel = {
     media: <MediaPanel />,
+    transcript: <TranscriptPanel />,
     text: <TextPanel />,
     audio: <AudioPanel />,
     captions: <CaptionsPanel />,
