@@ -14,6 +14,12 @@
 
 Edição pelo texto (palavras, frases, “ãh/hum”, pausas), cortes curtos sugeridos → novo projeto, máscaras retangulares/elípticas, tradução de legendas (com provedor configurado), exportação 4K medida e liberada, Docker Compose validado de ponta a ponta (com as correções do proxy da web, do `prisma generate` no build e da remoção do MinIO).
 
+## Personagens em 3 ângulos (03/11/2026)
+
+**Feito:** toda arte de personagem nasce como folha única com frente, três quartos e perfil (`packages/shared/src/characters.ts`), recortada pelo worker em três referências e aprovada pela pessoa. A API bloqueia cenas (imagem e vídeo) com personagem sem as três vistas aprovadas (`character_needs_turnaround`). Coberto por teste de integração.
+
+**Pendente:** enviar as três vistas como **imagens de referência** às APIs. Hoje a ficha entra só como texto no prompt da cena. Candidatos levantados na pesquisa (`docs/pesquisa/canal-infantil-virais-e-retencao.md`): Veo 3.1 aceita até 3 referências (encaixa com as 3 vistas), Gemini “Nano Banana” até 14, gpt-image em edição com várias imagens, FLUX.2 até 8. Os endpoints e preços não foram conferidos na documentação oficial, cujos domínios estavam bloqueados neste ambiente, e por isso não foram implementados. Também falta o filtro automático que reprova imagens fora do modelo (similaridade CLIP/DINOv2 com as vistas aprovadas).
+
 ## Funcionalidades pendentes (backlog)
 
 | Item | Fase | Observação |

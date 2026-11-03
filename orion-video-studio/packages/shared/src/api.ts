@@ -122,6 +122,8 @@ export const GenerationRequest = z.discriminatedUnion('kind', [
     provider: z.string(),
     model: z.string(),
     prompt: z.string().min(1).max(4000),
+    /** gera a folha de 3 ângulos deste personagem (o prompt é montado pelo servidor) */
+    turnaroundFor: z.string().uuid().optional(),
     aspect: z.enum(['16:9', '9:16', '1:1', '4:5']),
     characterIds: z.array(z.string().uuid()).max(4).default([]),
     sceneKey: z.string().max(64).optional(),
@@ -236,8 +238,8 @@ export const CharacterBody = z.object({
   continuityRules: z.string().max(1000),
   voiceProfileId: z.string().uuid().nullable().optional(),
   references: z
-    .array(z.object({ assetId: z.string().uuid(), authorization: z.string().min(5).max(500) }))
-    .max(8),
+    .array(z.object({ assetId: z.string().uuid(), authorization: z.string().min(5).max(500), angle: z.enum(['SHEET', 'FRONT', 'THREE_QUARTER', 'PROFILE']).nullable().optional() }))
+    .max(12),
 })
 export type CharacterBody = z.infer<typeof CharacterBody>
 

@@ -4968,6 +4968,11 @@
                             "minLength": 1,
                             "maxLength": 4000
                           },
+                          "turnaroundFor": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
                           "aspect": {
                             "type": "string",
                             "enum": [
@@ -5242,6 +5247,11 @@
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 4000
+                          },
+                          "turnaroundFor": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "aspect": {
                             "type": "string",
@@ -7037,7 +7047,7 @@
                     ]
                   },
                   "references": {
-                    "maxItems": 8,
+                    "maxItems": 12,
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -7051,6 +7061,22 @@
                           "type": "string",
                           "minLength": 5,
                           "maxLength": 500
+                        },
+                        "angle": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "SHEET",
+                                "FRONT",
+                                "THREE_QUARTER",
+                                "PROFILE"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -7176,7 +7202,7 @@
                     ]
                   },
                   "references": {
-                    "maxItems": 8,
+                    "maxItems": 12,
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -7190,6 +7216,22 @@
                           "type": "string",
                           "minLength": 5,
                           "maxLength": 500
+                        },
+                        "angle": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "SHEET",
+                                "FRONT",
+                                "THREE_QUARTER",
+                                "PROFILE"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -7255,6 +7297,71 @@
             "cookieAuth": []
           }
         ]
+      }
+    },
+    "/api/characters/{id}/turnaround": {
+      "post": {
+        "summary": "Aprovar folha de 3 ângulos gerada (frente, 3/4, perfil)",
+        "tags": [
+          "characters"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso"
+          },
+          "400": {
+            "description": "Dados inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado"
+          },
+          "404": {
+            "description": "Não encontrado ou sem acesso"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "generationJobId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "generationJobId"
+                ]
+              }
+            }
+          }
+        }
       }
     },
     "/api/voices/catalog": {

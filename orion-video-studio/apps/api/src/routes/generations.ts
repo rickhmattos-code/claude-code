@@ -11,7 +11,7 @@ import {
   pricingFor,
 } from '@orion/providers'
 import { audit, monthlySpend } from '@orion/server'
-import { CreateGenerationBody, type EstimateResponse, GenerationRequest } from '@orion/shared'
+import { CHARACTER_ANGLE_LABELS, CHARACTER_ANGLES, CreateGenerationBody, type EstimateResponse, GenerationRequest, turnaroundPrompt } from '@orion/shared'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { type Deps, HttpError, notFound, requireMember, route } from '../core.ts'
@@ -27,6 +27,24 @@ function characterPrompt(c: { name: string; appearance: string; wardrobe: string
   const keep = Array.isArray(c.mustKeep) && c.mustKeep.length ? ` Manter sempre: ${(c.mustKeep as string[]).join('; ')}.` : ''
   const pal = Array.isArray(c.palette) && c.palette.length ? ` Paleta: ${(c.palette as string[]).join(', ')}.` : ''
   return `${c.name}: ${c.appearance}. Figurino: ${c.wardrobe}.${keep}${pal}${c.continuityRules ? ` Continuidade: ${c.continuityRules}.` : ''}`
+}
+
+/**
+ * Personagens usados numa cena. Regra do produto: toda arte de personagem
+ * nasce como folha de 3 ângulos; sem as três vistas aprovadas (frente, 3/4 e
+ * perfil), cenas com o personagem não são geradas.
+ */
+async function sceneCharacters(deps: Deps, ws: string, ids: string[]) {
+  if (!ids.length) return []
+  const chars = await deps.db.characterProfile.findMany({ where: { id: { in: ids }, workspaceId: ws }, include: { references: { select: { angle: true } } } })
+  if (chars.length !== ids.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste espaço de trabalho.')
+  for (const c of chars) {
+    const missing = CHARACTER_ANGLES.filter((a) => !c.references.some((r) => r.angle === a))
+    if (missing.length) {
+      throw new HttpError(400, 'character_needs_turnaround', `“${c.name}” ainda não tem a folha em 3 ângulos aprovada (faltam: ${missing.map((a) => CHARACTER_ANGLE_LABELS[a].toLowerCase()).join(', ')}). Gere e aprove a folha na página Personagens antes de criar cenas.`, { characterId: c.id, missing })
+    }
+  }
+  return chars
 }
 
 /** Resolve adapter, valida capacidades, monta o prompt final e estima o custo. */
@@ -46,8 +64,7 @@ async function resolveRequest(deps: Deps, ws: string, req: GenerationRequest): P
         const img = await deps.db.asset.findFirst({ where: { id: req.imageAssetId, workspaceId: ws, kind: 'IMAGE', status: 'READY', deletedAt: null } })
         if (!img) throw new HttpError(400, 'image_invalid', 'Imagem inicial não encontrada neste espaço de trabalho.')
       }
-      const chars = req.characterIds.length ? await deps.db.characterProfile.findMany({ where: { id: { in: req.characterIds }, workspaceId: ws } }) : []
-      if (chars.length !== req.characterIds.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste espaço de trabalho.')
+      const chars = await sceneCharacters(deps, ws, req.characterIds)
       const prompt = chars.length ? `${req.prompt}\n\nPersonagens (manter consistência):\n${chars.map(characterPrompt).join('\n')}` : req.prompt
       return { configured: a.status(env).configured, estimate: a.estimate(req.model, req.durationSeconds, pricingFor(env, a.id, req.model)), finalInput: { ...req, prompt: prompt.slice(0, 4000) } }
     }
@@ -55,8 +72,16 @@ async function resolveRequest(deps: Deps, ws: string, req: GenerationRequest): P
       const a = findImage(req.provider, env)
       if (!a) throw new HttpError(404, 'provider_not_found', 'Provedor de imagem desconhecido.')
       if (!a.models().some((m) => m.id === req.model)) throw new HttpError(400, 'model_not_found', 'Modelo indisponível.')
-      const chars = req.characterIds.length ? await deps.db.characterProfile.findMany({ where: { id: { in: req.characterIds }, workspaceId: ws } }) : []
-      if (chars.length !== req.characterIds.length) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste espaço de trabalho.')
+      if (req.turnaroundFor) {
+        // folha de personagem: prompt montado aqui, sempre horizontal (três colunas)
+        const c = await deps.db.characterProfile.findFirst({ where: { id: req.turnaroundFor, workspaceId: ws } })
+        if (!c) throw new HttpError(400, 'character_invalid', 'Personagem não encontrado neste espaço de trabalho.')
+        const bible = { name: c.name, description: c.description, appearance: c.appearance, wardrobe: c.wardrobe, palette: (c.palette as string[]) ?? [], mustKeep: (c.mustKeep as string[]) ?? [] }
+        // o texto enviado pelo cliente é o estilo visual da folha
+        const style = req.prompt.trim() || undefined
+        return { configured: a.status(env).configured, estimate: a.estimate(req.model, pricingFor(env, a.id, req.model)), finalInput: { ...req, aspect: '16:9', characterIds: [], prompt: turnaroundPrompt(bible, style) } }
+      }
+      const chars = await sceneCharacters(deps, ws, req.characterIds)
       const prompt = chars.length ? `${req.prompt}\n\nPersonagens:\n${chars.map(characterPrompt).join('\n')}` : req.prompt
       return { configured: a.status(env).configured, estimate: a.estimate(req.model, pricingFor(env, a.id, req.model)), finalInput: { ...req, prompt: prompt.slice(0, 4000) } }
     }

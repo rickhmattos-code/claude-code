@@ -346,6 +346,45 @@ describe('gerações por IA (provedores simulados) e custos', () => {
     const a = await A.waitAsset(done.resultAssetId)
     expect(a.durationFlicks).toBe(4 * FLICKS_PER_SECOND)
   }, 120_000)
+  test('personagem: cenas exigem a folha em 3 ângulos aprovada (frente, 3/4, perfil)', async () => {
+    const c = await A.post(`/api/workspaces/${wsA}/characters`, { name: 'Lia Letrinha', description: 'curiosa e alegre', appearance: 'menina coruja azul de óculos redondos', wardrobe: 'mochila amarela', palette: ['#3B82F6', '#FACC15'], mustKeep: ['óculos redondos'], continuityRules: '', voiceProfileId: null, references: [] })
+    expect(c.status, JSON.stringify(c.json)).toBe(200)
+    expect(c.json.turnaroundComplete).toBe(false)
+    const scene = { kind: 'IMAGE', provider: 'mock-image', model: 'mock-image-1', prompt: 'Lia na floresta das vogais', aspect: '16:9', characterIds: [c.json.id] }
+    const blocked = await A.post(`/api/workspaces/${wsA}/generations/estimate`, { request: scene })
+    expect(blocked.status).toBe(400)
+    expect(blocked.json.error.code).toBe('character_needs_turnaround')
+    expect(blocked.json.error.message).toMatch(/3 ângulos/)
+    // outro usuário não gera folha para personagem alheio
+    const foreign = await B.post(`/api/workspaces/${wsB}/generations`, { request: { kind: 'IMAGE', provider: 'mock-image', model: 'mock-image-1', prompt: 'estilo', aspect: '16:9', turnaroundFor: c.json.id, characterIds: [] }, idempotencyKey: 'turnaround-foreign', acceptEstimatedCents: 0 })
+    expect(foreign.status).toBe(400)
+    const g = await A.post(`/api/workspaces/${wsA}/generations`, { request: { kind: 'IMAGE', provider: 'mock-image', model: 'mock-image-1', prompt: 'desenho 2D infantil', aspect: '9:16', turnaroundFor: c.json.id, characterIds: [] }, idempotencyKey: 'turnaround-lia-1', acceptEstimatedCents: 0 })
+    expect(g.status, JSON.stringify(g.json)).toBe(200)
+    const done = await A.waitGeneration(g.json.id)
+    expect(done.status).toBe('succeeded')
+    // prompt montado pelo servidor e folha sempre horizontal
+    expect(done.input.aspect).toBe('16:9')
+    expect(done.input.prompt).toMatch(/front view[\s\S]*three-quarter view[\s\S]*side profile/)
+    const views = done.result.turnaround
+    expect(views.characterId).toBe(c.json.id)
+    const sheet = await A.waitAsset(views.SHEET)
+    for (const angle of ['FRONT', 'THREE_QUARTER', 'PROFILE']) {
+      const a = await A.waitAsset(views[angle])
+      expect(a.kind).toBe('IMAGE')
+      // cada vista é um terço da folha
+      expect(Math.abs(a.width * 3 - sheet.width)).toBeLessThanOrEqual(6)
+      expect(a.height).toBe(sheet.height)
+    }
+    const approved = await A.post(`/api/characters/${c.json.id}/turnaround`, { generationJobId: g.json.id })
+    expect(approved.status).toBe(200)
+    expect(approved.json.turnaroundComplete).toBe(true)
+    expect(approved.json.references.map((r: { angle: string }) => r.angle).sort()).toEqual(['FRONT', 'PROFILE', 'SHEET', 'THREE_QUARTER'])
+    // salvar a ficha mantém a folha
+    const saved = await A.put(`/api/characters/${c.json.id}`, { ...c.json, references: approved.json.references.map((r: { assetId: string; authorization: string; angle: string }) => ({ assetId: r.assetId, authorization: r.authorization, angle: r.angle })) })
+    expect(saved.json.turnaroundComplete).toBe(true)
+    const allowed = await A.post(`/api/workspaces/${wsA}/generations/estimate`, { request: scene })
+    expect(allowed.status).toBe(200)
+  }, 120_000)
   test('nenhuma resposta pública contém a chave do servidor', async () => {
     const secret = TEST_ENV.GEMINI_API_KEY!
     const bodies = [

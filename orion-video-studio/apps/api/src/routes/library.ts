@@ -19,12 +19,14 @@ import {
   AssistantBrief,
   AssistantCommandBody,
   BrandKitBody,
+  CHARACTER_ANGLES,
   CharacterBody,
   MusicQuery,
   RegisterUserMusicBody,
   SaveTemplateBody,
   TemplateDefinition,
   VoiceProfileBody,
+  hasFullTurnaround,
 } from '@orion/shared'
 import { parseCommand } from '@orion/timeline'
 import type { FastifyInstance } from 'fastify'
@@ -149,7 +151,8 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     mustKeep: c.mustKeep,
     continuityRules: c.continuityRules,
     voiceProfileId: c.voiceProfileId,
-    references: await Promise.all(c.references.map(async (r) => ({ assetId: r.assetId, authorization: r.authorization, asset: await assetDto(deps, r.asset) }))),
+    references: await Promise.all(c.references.map(async (r) => ({ assetId: r.assetId, authorization: r.authorization, angle: r.angle, asset: await assetDto(deps, r.asset) }))),
+    turnaroundComplete: hasFullTurnaround(c.references),
   })
   route(app, deps, { method: 'GET', url: '/api/workspaces/:ws/characters', summary: 'Fichas de personagens', tag: 'characters' }, async ({ user, params }) => {
     await requireMember(deps, user.id, params.ws!)
@@ -166,7 +169,7 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     return deps.db.$transaction(async (tx) => {
       const c = id ? await tx.characterProfile.update({ where: { id }, data }) : await tx.characterProfile.create({ data: { workspaceId: ws, ...data } })
       await tx.characterReference.deleteMany({ where: { characterId: c.id } })
-      if (body.references.length) await tx.characterReference.createMany({ data: body.references.map((r) => ({ characterId: c.id, assetId: r.assetId, authorization: r.authorization })) })
+      if (body.references.length) await tx.characterReference.createMany({ data: body.references.map((r) => ({ characterId: c.id, assetId: r.assetId, authorization: r.authorization, angle: r.angle ?? null })) })
       return tx.characterProfile.findUniqueOrThrow({ where: { id: c.id }, include: { references: { include: { asset: true } } } })
     })
   }
@@ -178,6 +181,25 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
     const c = await ownedBy(deps, user.id, await deps.db.characterProfile.findUnique({ where: { id: params.id! } }), 'Personagem', 'EDITOR')
     return charOut(await saveCharacter(c.workspaceId, body, c.id))
   })
+  route(
+    app,
+    deps,
+    { method: 'POST', url: '/api/characters/:id/turnaround', summary: 'Aprovar folha de 3 ângulos gerada (frente, 3/4, perfil)', tag: 'characters', body: z.object({ generationJobId: z.string().uuid() }) },
+    async ({ user, params, body }) => {
+      const c = await ownedBy(deps, user.id, await deps.db.characterProfile.findUnique({ where: { id: params.id! } }), 'Personagem', 'EDITOR')
+      const g = await deps.db.generationJob.findFirst({ where: { id: body.generationJobId, workspaceId: c.workspaceId, kind: 'IMAGE', status: 'succeeded' } })
+      const views = (g?.result as { turnaround?: { characterId: string; SHEET: string; FRONT: string; THREE_QUARTER: string; PROFILE: string } } | null)?.turnaround
+      if (!g || !views || views.characterId !== c.id) throw new HttpError(400, 'turnaround_invalid', 'Esta geração não é uma folha de 3 ângulos deste personagem.')
+      const authorization = 'Arte original gerada por IA para personagem fictício (folha de 3 ângulos aprovada).'
+      const angles = ['SHEET', ...CHARACTER_ANGLES] as const
+      await deps.db.$transaction(async (tx) => {
+        // a nova folha substitui a anterior; referências avulsas (sem ângulo) permanecem
+        await tx.characterReference.deleteMany({ where: { characterId: c.id, angle: { not: null } } })
+        await tx.characterReference.createMany({ data: angles.map((angle) => ({ characterId: c.id, assetId: views[angle], authorization, angle })) })
+      })
+      return charOut(await deps.db.characterProfile.findUniqueOrThrow({ where: { id: c.id }, include: { references: { include: { asset: true } } } }))
+    },
+  )
   route(app, deps, { method: 'DELETE', url: '/api/characters/:id', summary: 'Excluir personagem', tag: 'characters' }, async ({ user, params }) => {
     const c = await ownedBy(deps, user.id, await deps.db.characterProfile.findUnique({ where: { id: params.id! } }), 'Personagem', 'EDITOR')
     await deps.db.characterProfile.delete({ where: { id: c.id } })

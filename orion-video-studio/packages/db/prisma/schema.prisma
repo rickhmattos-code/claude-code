@@ -407,7 +407,17 @@ model CharacterReference {
   asset        Asset            @relation(fields: [assetId], references: [id], onDelete: Restrict)
   /// Declaração de autorização de uso da imagem
   authorization String
+  /// vista da folha de personagem (null = referência avulsa, ex.: foto autorizada)
+  angle        CharacterAngle?
   createdAt    DateTime         @default(now())
+}
+
+/// Folha de personagem em 3 ângulos (regra do produto: cenas com personagem exigem as três vistas)
+enum CharacterAngle {
+  SHEET
+  FRONT
+  THREE_QUARTER
+  PROFILE
 }
 
 model LicenseRecord {

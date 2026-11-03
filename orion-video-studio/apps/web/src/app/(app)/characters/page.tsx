@@ -6,9 +6,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { AssetPicker } from '@/components/AssetPicker'
 import { api, errorMessage } from '@/lib/api'
 import { useSession } from '@/lib/session'
+import { TurnaroundSection } from './Turnaround'
 import type { AssetDto, GenerationDto } from '@/lib/types'
 
-type Character = Omit<CharacterBody, 'references'> & { id: string; references: Array<{ assetId: string; authorization: string; asset: AssetDto }> }
+type Character = Omit<CharacterBody, 'references'> & { id: string; references: Array<{ assetId: string; authorization: string; angle?: CharacterBody['references'][number]['angle']; asset: AssetDto }>; turnaroundComplete?: boolean }
 const EMPTY: CharacterBody = { name: '', description: '', appearance: '', wardrobe: '', palette: [], mustKeep: [], continuityRules: '', voiceProfileId: null, references: [] }
 
 export default function CharactersPage() {
@@ -51,7 +52,7 @@ export default function CharactersPage() {
       <header className="flex justify-between items-end gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-2xl font-bold">Personagens</h1>
-          <p className="text-sm text-[var(--color-muted)]">Fichas reutilizadas nos prompts das cenas. Os modelos não garantem preservação absoluta de identidade: compare, aprove ou regenere.</p>
+          <p className="text-sm text-[var(--color-muted)]">Toda arte de personagem nasce como folha em 3 ângulos (frente, 3/4 e perfil), usada como referência em todas as cenas. Os modelos não garantem identidade perfeita: compare, aprove ou regenere.</p>
         </div>
         <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEdit({ ...EMPTY })}>Novo personagem</Button>
       </header>
@@ -83,7 +84,7 @@ export default function CharactersPage() {
               <AssetPicker id="ref" label="Adicionar referência" kinds={['IMAGE']} value={newRef.assetId} onChange={(v) => setNewRef({ ...newRef, assetId: v })} />
               <Field label="Declaração de autorização de uso da imagem" htmlFor="au"><Input id="au" value={newRef.authorization} onChange={(e) => setNewRef({ ...newRef, authorization: e.target.value })} placeholder="Ex.: Imagem própria; autorizada por ... em ..." /></Field>
             </div>
-            <Button size="sm" disabled={!newRef.assetId || newRef.authorization.length < 5 || edit.references.length >= 8} onClick={() => { setEdit({ ...edit, references: [...edit.references, { assetId: newRef.assetId!, authorization: newRef.authorization }] }); setNewRef({ assetId: null, authorization: '' }) }}>Incluir referência</Button>
+            <Button size="sm" disabled={!newRef.assetId || newRef.authorization.length < 5 || edit.references.length >= 12} onClick={() => { setEdit({ ...edit, references: [...edit.references, { assetId: newRef.assetId!, authorization: newRef.authorization }] }); setNewRef({ assetId: null, authorization: '' }) }}>Incluir referência</Button>
           </div>
           <div className="md:col-span-2 flex justify-end gap-2">
             <Button onClick={() => setEdit(null)}>Cancelar</Button>
@@ -104,9 +105,10 @@ export default function CharactersPage() {
                     <p className="text-[13px] text-[var(--color-muted)]">{c.appearance}</p>
                     <div className="flex gap-1 flex-wrap mt-1">{c.mustKeep.map((m) => <Badge key={m}>{m}</Badge>)}</div>
                   </div>
-                  <Button size="sm" onClick={() => setEdit({ id: c.id, name: c.name, description: c.description, appearance: c.appearance, wardrobe: c.wardrobe, palette: c.palette, mustKeep: c.mustKeep, continuityRules: c.continuityRules, voiceProfileId: c.voiceProfileId, references: c.references.map((r) => ({ assetId: r.assetId, authorization: r.authorization })) })}>Editar</Button>
+                  <Button size="sm" onClick={() => setEdit({ id: c.id, name: c.name, description: c.description, appearance: c.appearance, wardrobe: c.wardrobe, palette: c.palette, mustKeep: c.mustKeep, continuityRules: c.continuityRules, voiceProfileId: c.voiceProfileId, references: c.references.map((r) => ({ assetId: r.assetId, authorization: r.authorization, angle: r.angle ?? null })) })}>Editar</Button>
                   <Button size="sm" variant="danger" icon={<Trash2 size={12} />} onClick={async () => { if (confirm('Excluir personagem?')) { await api(`/characters/${c.id}`, { method: 'DELETE' }); void load() } }}>Excluir</Button>
                 </div>
+                <TurnaroundSection workspaceId={ws.id} character={c} onApproved={() => void load()} />
                 <div className="flex gap-3 overflow-x-auto pb-1" aria-label="Referência × resultados">
                   {c.references.map((r) => (
                     <figure key={r.assetId} className="shrink-0">

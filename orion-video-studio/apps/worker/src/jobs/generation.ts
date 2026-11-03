@@ -150,7 +150,21 @@ async function runImage(ctx: WorkerContext, job: GenerationJob, input: Extract<I
   const out = join(dir, 'image.png')
   await adapter.generate({ model: job.model, prompt: input.prompt, aspect: input.aspect }, out, ctx.env)
   const { id } = await storeAsset(ctx, job, out, 'image/png', '.png', 'GENERATED', `IA — ${input.prompt.slice(0, 60)}`)
-  await ctx.db.generationJob.update({ where: { id: job.id }, data: { status: 'succeeded', resultAssetId: id, confirmedCostCents: job.estimatedCostCents, result: {} } })
+  let result: Record<string, unknown> = {}
+  if (input.turnaroundFor) {
+    // folha de 3 ângulos: uma imagem com três colunas iguais → três referências recortadas
+    const character = await ctx.db.characterProfile.findUnique({ where: { id: input.turnaroundFor }, select: { name: true } })
+    const label = character?.name ?? 'Personagem'
+    const views: Record<string, string> = { SHEET: id }
+    const names = { FRONT: 'frente', THREE_QUARTER: 'três quartos', PROFILE: 'perfil' } as const
+    for (const [i, angle] of (['FRONT', 'THREE_QUARTER', 'PROFILE'] as const).entries()) {
+      const crop = join(dir, `view-${angle}.png`)
+      await runFfmpeg(['-i', out, '-vf', `crop=trunc(iw/3/2)*2:ih:trunc(iw/3/2)*2*${i}:0`, '-frames:v', '1', crop])
+      views[angle] = (await storeAsset(ctx, job, crop, 'image/png', '.png', 'GENERATED', `${label} — ${names[angle]}`)).id
+    }
+    result = { turnaround: { characterId: input.turnaroundFor, ...views } }
+  }
+  await ctx.db.generationJob.update({ where: { id: job.id }, data: { status: 'succeeded', resultAssetId: id, confirmedCostCents: job.estimatedCostCents, result: result as Prisma.InputJsonValue } })
   await finishLedger(ctx, job, job.estimatedCostCents, true)
 }
 
