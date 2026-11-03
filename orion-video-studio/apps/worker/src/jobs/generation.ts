@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { mkdir } from 'node:fs/promises'
 import { type GenerationJob, Prisma } from '@orion/db'
 import { probeFile, runFfmpeg } from '@orion/media'
-import { ProviderError, findImage, findTranscription, findTts, findVideo, pricingFor } from '@orion/providers'
+import { ProviderError, findImage, findMusic, findTranscription, findTts, findVideo, pricingFor } from '@orion/providers'
 import { objectKey, userFacingError } from '@orion/server'
 import type { CaptionSegment, GenerationRequest } from '@orion/shared'
 import { captionsFromCharAlignment, newId, secondsToFlicks, wordsToSegments } from '@orion/timeline'
@@ -89,6 +89,7 @@ export async function runGenerationJob(ctx: WorkerContext, data: { generationJob
     if (job.kind === 'IMAGE') await runImage(ctx, job, input as Extract<Input, { kind: 'IMAGE' }>, dir)
     else if (job.kind === 'TTS') await runTts(ctx, job, input as Extract<Input, { kind: 'TTS' }>, dir)
     else if (job.kind === 'TRANSCRIPTION') await runTranscription(ctx, job, input as Extract<Input, { kind: 'TRANSCRIPTION' }>, dir)
+    else if (job.kind === 'MUSIC') await runMusic(ctx, job, input as Extract<Input, { kind: 'MUSIC' }> & { negativeStyles?: string[] }, dir)
   } catch (err) {
     // repete só quando o provedor respondeu explicitamente (429/5xx = não processado);
     // falha de rede/timeout em chamada síncrona é ambígua (pode ter sido cobrada)
@@ -166,6 +167,41 @@ async function runImage(ctx: WorkerContext, job: GenerationJob, input: Extract<I
   }
   await ctx.db.generationJob.update({ where: { id: job.id }, data: { status: 'succeeded', resultAssetId: id, confirmedCostCents: job.estimatedCostCents, result: result as Prisma.InputJsonValue } })
   await finishLedger(ctx, job, job.estimatedCostCents, true)
+}
+
+/**
+ * Música gerada: vira um ativo de áudio E uma faixa da biblioteca do espaço de
+ * trabalho, com registro de licença (provedor, modelo, ID da geração) como
+ * prova de origem. Uso comercial só quando a pessoa declarou plano que o
+ * permite e o provedor não é simulado.
+ */
+async function runMusic(ctx: WorkerContext, job: GenerationJob, input: Extract<Input, { kind: 'MUSIC' }> & { negativeStyles?: string[] }, dir: string) {
+  const adapter = findMusic(job.provider, ctx.env)
+  if (!adapter || !adapter.status(ctx.env).configured) return markFailed(ctx, job, 'Integração com configuração pendente.')
+  const raw = join(dir, 'music-raw')
+  const { format } = await adapter.compose({ model: job.model, styles: input.styles, negativeStyles: input.negativeStyles ?? [], sections: input.sections }, raw, ctx.env)
+  // normaliza para AAC em M4A (formato da biblioteca)
+  const out = join(dir, 'music.m4a')
+  await runFfmpeg(['-f', format, '-i', raw, '-vn', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', out])
+  const { id, info } = await storeAsset(ctx, job, out, 'audio/mp4', '.m4a', 'GENERATED', `Música — ${input.title}`)
+  const mock = adapter.id.startsWith('mock-')
+  const lyrics = input.sections.flatMap((s) => s.lines).join(' / ')
+  const license = await ctx.db.licenseRecord.create({
+    data: {
+      source: `${adapter.label} (${job.model})`,
+      author: 'Gerada por IA a partir de letra escrita pelo usuário',
+      licenseName: mock ? 'Simulação (MODO DE TESTE): sem direitos de uso' : 'Termos do provedor para o plano contratado',
+      commercialUse: !mock && input.commercialPlanDeclared === true,
+      attributionRequired: false,
+      platformRestrictions: `Prova de origem: geração ${job.id} em ${new Date().toISOString().slice(0, 10)}. Letra: ${lyrics.slice(0, 200)}`,
+    },
+  })
+  const track = await ctx.db.musicTrack.create({
+    data: { workspaceId: job.workspaceId, assetId: id, licenseRecordId: license.id, title: input.title.slice(0, 120), artist: mock ? 'MODO DE TESTE' : 'Gerada por IA', genre: 'infantil', mood: (input.mood ?? 'alegre').slice(0, 40), durationFlicks: BigInt(info.durationFlicks ?? 0) },
+  })
+  await ctx.db.generationJob.update({ where: { id: job.id }, data: { status: 'succeeded', resultAssetId: id, confirmedCostCents: job.estimatedCostCents, result: { musicTrackId: track.id, durationFlicks: info.durationFlicks } } })
+  await finishLedger(ctx, job, job.estimatedCostCents, true)
+  ctx.log('generation.succeeded', { id: job.id, kind: 'MUSIC' })
 }
 
 async function runTts(ctx: WorkerContext, job: GenerationJob, input: Extract<Input, { kind: 'TTS' }>, dir: string) {

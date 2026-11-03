@@ -1,12 +1,13 @@
 'use client'
 import { formatClock } from '@orion/timeline'
 import { Badge, Button, Dialog, Field, Input, Select, Spinner, useToast } from '@orion/ui'
-import { Pause, Play, Star, Upload } from 'lucide-react'
+import { Music2, Pause, Play, Star, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, errorMessage } from '@/lib/api'
 import { useSession } from '@/lib/session'
 import type { MusicDto } from '@/lib/types'
 import { uploadFile, waitForAsset } from '@/lib/upload'
+import { CreateMusicDialog } from './CreateMusicDialog'
 
 export default function MusicPage() {
   const ws = useSession((s) => s.workspace)!
@@ -15,6 +16,7 @@ export default function MusicPage() {
   const [f, setF] = useState({ q: '', mood: '', minSeconds: '', maxSeconds: '', minBpm: '', maxBpm: '', sfx: 'false', favorites: 'false' })
   const [playing, setPlaying] = useState<string | null>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const audio = useRef<HTMLAudioElement | null>(null)
   const load = useCallback(() => {
     // filtros vazios não vão para a query; sfx é sempre enviado
@@ -34,9 +36,14 @@ export default function MusicPage() {
           <h1 className="font-display text-2xl font-bold">Biblioteca musical</h1>
           <p className="text-sm text-[var(--color-muted)]">Somente faixas com licença registrada (origem, autor, uso comercial, atribuição e restrições).</p>
         </div>
-        <Button icon={<Upload size={16} />} onClick={() => setUploadOpen(true)}>
-          Enviar música própria
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="primary" icon={<Music2 size={16} />} onClick={() => setCreateOpen(true)}>
+            Criar música com IA
+          </Button>
+          <Button icon={<Upload size={16} />} onClick={() => setUploadOpen(true)}>
+            Enviar música própria
+          </Button>
+        </div>
       </header>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 items-end">
         <div className="col-span-2">
@@ -147,6 +154,7 @@ export default function MusicPage() {
         </div>
       )}
       <UploadMusicDialog open={uploadOpen} onClose={() => setUploadOpen(false)} onDone={load} />
+      <CreateMusicDialog open={createOpen} onClose={() => setCreateOpen(false)} onDone={load} />
     </div>
   )
 }

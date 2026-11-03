@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ProviderStatus } from '@orion/shared'
 import { runFfmpeg } from '@orion/media'
 import { estimateNarrationSeconds } from '@orion/timeline'
-import type { Env, ImageAdapter, TranscriptionAdapter, TtsAdapter, VideoAdapter } from './types.ts'
+import type { Env, ImageAdapter, MusicAdapter, TranscriptionAdapter, TtsAdapter, VideoAdapter } from './types.ts'
 
 /**
  * Provedores SIMULADOS — ativos somente com PROVIDERS_MOCK=1 (testes
@@ -115,5 +115,21 @@ export const mockTranscriptionAdapter: TranscriptionAdapter = {
   estimate: () => ({ cents: 0, basis: 'Provedor simulado (custo zero).' }),
   async transcribe() {
     return { text: '[transcrição simulada — MODO DE TESTE]', segments: [{ start: 0, end: 2, text: '[transcrição simulada — MODO DE TESTE]' }], words: null }
+  },
+}
+
+/** Música simulada: melodia sintética (sem voz) com a duração pedida. Somente testes. */
+export const mockMusicAdapter: MusicAdapter = {
+  id: 'mock-music',
+  label: 'Música simulada',
+  status: (env) => mockStatus('mock-music', 'Música simulada', ['MUSIC'], env),
+  models: () => [{ id: 'mock-music-1', label: 'Simulado', vocals: false, maxSeconds: 300, notes: 'Melodia sintética sem voz. Somente testes.' }],
+  estimate: () => ({ cents: 0, basis: 'Provedor simulado (custo zero).' }),
+  async compose(input, dst) {
+    const total = input.sections.reduce((a, s) => a + s.durationSeconds, 0)
+    // escala pentatônica alternando a cada 0,4 s + pulso de 2 batidas por segundo
+    const melody = "0.25*sin(2*PI*t*(392+98*floor(mod(t*2.5,5))))*(0.6+0.4*lt(mod(t,0.5),0.08))"
+    await runFfmpeg(['-f', 'lavfi', '-i', `aevalsrc='${melody}':s=44100:d=${total}`, '-ac', '2', '-metadata', 'title=MODO DE TESTE', '-c:a', 'pcm_s16le', '-f', 'wav', dst])
+    return { format: 'wav' }
   },
 }

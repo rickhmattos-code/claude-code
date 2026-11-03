@@ -8,6 +8,7 @@ Todas as chaves ficam **somente** no `.env` da API e do worker. O frontend nunca
 | ElevenLabs | Narração pt-BR com tempo por caractere | `ELEVENLABS_API_KEY` | 🟡 Contrato testado com HTTP simulado; sem chave real |
 | OpenAI Images | Imagens de storyboard (`gpt-image-1`) | `OPENAI_API_KEY` | 🟡 Idem |
 | OpenAI Whisper | Transcrição com tempo por palavra e segmento | `OPENAI_API_KEY` | 🟡 Idem; o worker divide o áudio em blocos de 10 min (limite de 25 MB) |
+| ElevenLabs Eleven Music | Música cantada com letra por seção (`MUSIC`) | `ELEVENLABS_API_KEY` | 🟡 Contrato a validar no primeiro uso; uso comercial depende do plano declarado |
 | Anthropic Claude | Roteiro, aberturas, interpretação de comandos livres e **tradução de legendas** | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | 🟡 Saída validada por schema; sem chave, o assistente usa o organizador local (rotulado “sem IA”) |
 | Geração musical | — | — | ⏳ Interface reservada; só será ativada com API oficial, credenciais e termos que permitam sincronização comercial |
 | Provedores simulados | Testes automatizados e demonstração offline | `PROVIDERS_MOCK=1` | ✅ Geram mídia real marcada “MODO DE TESTE”, custo 0, sem tempo por palavra inventado |

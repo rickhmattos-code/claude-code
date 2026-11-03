@@ -7,6 +7,7 @@ import {
   anthropicAdapter,
   applyPronunciation,
   elevenLabsAdapter,
+  elevenLabsMusicAdapter,
   llmPlan,
   localPlan,
   openAiTranscriptionAdapter,
@@ -32,11 +33,12 @@ describe('provider status', () => {
       expect(p.missingEnv.length).toBeGreaterThan(0)
     }
     expect(s.some((p) => p.mode === 'mock')).toBe(false)
-    expect(s.find((p) => p.id === 'music-generation')!.configured).toBe(false)
+    expect(s.find((p) => p.id === 'elevenlabs-music')!.configured).toBe(false)
+    expect(s.some((p) => p.id === 'mock-music')).toBe(false)
   })
   test('mock providers are labelled as mock', () => {
     const s = providerStatuses({ PROVIDERS_MOCK: '1' })
-    expect(s.filter((p) => p.mode === 'mock').length).toBe(4)
+    expect(s.filter((p) => p.mode === 'mock').length).toBe(5)
   })
 })
 
@@ -162,5 +164,37 @@ describe('caption translation', () => {
     const out = await translateSegments(mock, {}, segs, 'es')
     expect(out[0]!.text).toBe('[TESTE→es] Olá, mundo')
     expect(translationAdapter({ ANTHROPIC_API_KEY: 'k', PROVIDERS_MOCK: '1' })!.id).toBe('anthropic')
+  })
+})
+
+describe('ElevenLabs Music (contrato)', () => {
+  test('envia o plano de composição com letra por seção e grava o áudio binário', async () => {
+    const calls: Array<{ url: string; init: RequestInit }> = []
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+      calls.push({ url, init })
+      return new Response(new Uint8Array([0x49, 0x44, 0x33, 1, 2, 3]), { status: 200, headers: { 'content-type': 'audio/mpeg' } })
+    })
+    const dst = join(dir, 'musica.mp3')
+    const r = await elevenLabsMusicAdapter.compose(
+      { model: 'music_v1', styles: ['cheerful kids song', 'ukulele'], negativeStyles: ['scary'], sections: [{ name: 'Refrão', durationSeconds: 12, lines: ['A, E, I, O, U', 'vamos cantar com você'] }] },
+      dst,
+      { ELEVENLABS_API_KEY: 'chave-secreta' },
+    )
+    expect(r.format).toBe('mp3')
+    expect(readFileSync(dst).subarray(0, 3).toString()).toBe('ID3')
+    expect(calls[0]!.url).toBe('https://api.elevenlabs.io/v1/music?output_format=mp3_44100_128')
+    expect((calls[0]!.init.headers as Record<string, string>)['xi-api-key']).toBe('chave-secreta')
+    const body = JSON.parse(String(calls[0]!.init.body))
+    expect(body.model_id).toBe('music_v1')
+    expect(body.composition_plan.positive_global_styles).toEqual(['cheerful kids song', 'ukulele'])
+    expect(body.composition_plan.negative_global_styles).toEqual(['scary'])
+    expect(body.composition_plan.sections[0]).toMatchObject({ section_name: 'Refrão', duration_ms: 12000, lines: ['A, E, I, O, U', 'vamos cantar com você'] })
+  })
+  test('resposta JSON (erro sem áudio) não é gravada como música', async () => {
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ detail: 'x' }), { status: 200, headers: { 'content-type': 'application/json' } }))
+    await expect(elevenLabsMusicAdapter.compose({ model: 'music_v1', styles: ['kids'], negativeStyles: [], sections: [{ name: 'A', durationSeconds: 5, lines: [] }] }, join(dir, 'x.mp3'), { ELEVENLABS_API_KEY: 'k' })).rejects.toThrow(/sem áudio/)
+  })
+  test('sem chave: configuração pendente', () => {
+    expect(elevenLabsMusicAdapter.status({}).mode).toBe('pending-config')
   })
 })

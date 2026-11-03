@@ -20,6 +20,16 @@ Edição pelo texto (palavras, frases, “ãh/hum”, pausas), cortes curtos sug
 
 **Pendente:** enviar as três vistas como **imagens de referência** às APIs. Hoje a ficha entra só como texto no prompt da cena. Candidatos levantados na pesquisa (`docs/pesquisa/canal-infantil-virais-e-retencao.md`): Veo 3.1 aceita até 3 referências (encaixa com as 3 vistas), Gemini “Nano Banana” até 14, gpt-image em edição com várias imagens, FLUX.2 até 8. Os endpoints e preços não foram conferidos na documentação oficial, cujos domínios estavam bloqueados neste ambiente, e por isso não foram implementados. Também falta o filtro automático que reprova imagens fora do modelo (similaridade CLIP/DINOv2 com as vistas aprovadas).
 
+## Música cantada com IA (03/11/2026)
+
+**Feito:** geração de música com letra por seção (`MUSIC`), com o adaptador ElevenLabs Eleven Music e um simulado para testes. A música vira áudio e faixa da biblioteca do espaço de trabalho, com licença e prova de origem (provedor, modelo, ID da geração, data e letra). Estilos impróprios para crianças vão sempre como negativos. A pessoa precisa confirmar que revisou a letra, e o uso comercial só é marcado quando ela declara que o plano permite (nunca no simulado). O piloto “A Canção das Vogais” já vem preenchido. Coberto por testes de contrato e de integração.
+
+**Pendente:**
+- Validar o contrato da ElevenLabs no primeiro uso real. Ele foi montado a partir de trechos da documentação oficial (`POST /v1/music`, `composition_plan`), cujo domínio estava bloqueado aqui.
+- Preencher o preço em `pricing.json`.
+- Testar a dicção em pt-BR.
+- Legenda sincronizada da letra (karaokê silábico): a música não traz tempo por palavra; o caminho é transcrever o áudio gerado com tempo por palavra e revisar.
+
 ## Funcionalidades pendentes (backlog)
 
 | Item | Fase | Observação |

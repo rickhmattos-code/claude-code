@@ -82,6 +82,7 @@ export interface ProvidersDto {
   tts: Array<{ id: string; label: string; configured: boolean; mode: string; models: Array<{ id: string; label: string; timestamps: boolean; speedRange: [number, number] }> }>
   transcription: Array<{ id: string; label: string; configured: boolean; mode: string; models: Array<{ id: string; label: string; wordTimestamps: boolean }> }>
   translation: { configured: boolean; label: string; mode: string }
+  music: Array<{ id: string; label: string; configured: boolean; mode: string; models: Array<{ id: string; label: string; vocals: boolean; maxSeconds: number; notes: string }> }>
 }
 
 export interface MusicDto {

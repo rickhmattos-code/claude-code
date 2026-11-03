@@ -3,6 +3,7 @@ import type { Prisma } from '@orion/db'
 import { toNum } from '@orion/db'
 import {
   IMAGE_ADAPTERS,
+  MUSIC_ADAPTERS,
   TRANSCRIPTION_ADAPTERS,
   TTS_ADAPTERS,
   VIDEO_ADAPTERS,
@@ -323,6 +324,7 @@ export function registerLibrary(app: FastifyInstance, deps: Deps) {
       image: keep(IMAGE_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
       tts: keep(TTS_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
       transcription: keep(TRANSCRIPTION_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
+      music: keep(MUSIC_ADAPTERS).map((a) => ({ id: a.id, label: a.label, models: a.models(), configured: a.status(env).configured, mode: a.status(env).mode })),
       translation: (() => {
         const t = translationAdapter(env)
         return t ? { configured: true, label: t.label, mode: t.status(env).mode } : { configured: false, label: 'Anthropic Claude', mode: 'pending-config' }

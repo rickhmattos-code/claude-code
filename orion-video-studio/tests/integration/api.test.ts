@@ -385,6 +385,29 @@ describe('gerações por IA (provedores simulados) e custos', () => {
     const allowed = await A.post(`/api/workspaces/${wsA}/generations/estimate`, { request: scene })
     expect(allowed.status).toBe(200)
   }, 120_000)
+  test('música com IA: vira áudio e faixa da biblioteca com registro de origem; estilos impróprios sempre negados', async () => {
+    const req = { kind: 'MUSIC', provider: 'mock-music', model: 'mock-music-1', title: 'A Canção das Vogais', styles: ["cheerful children's song"], sections: [{ name: 'Refrão', durationSeconds: 6, lines: ['A, E, I, O, U'] }, { name: 'Sua vez', durationSeconds: 4, lines: [] }], mood: 'alegre', commercialPlanDeclared: true }
+    const tooLong = await A.post(`/api/workspaces/${wsA}/generations/estimate`, { request: { ...req, sections: Array.from({ length: 3 }, () => ({ name: 'Longa', durationSeconds: 120, lines: ['la'] })) } })
+    expect(tooLong.status).toBe(400)
+    expect(tooLong.json.error.code).toBe('duration_unsupported')
+    const g = await A.post(`/api/workspaces/${wsA}/generations`, { request: req, idempotencyKey: 'musica-vogais-1', acceptEstimatedCents: 0 })
+    expect(g.status, JSON.stringify(g.json)).toBe(200)
+    const done = await A.waitGeneration(g.json.id)
+    expect(done.status, done.error).toBe('succeeded')
+    expect(done.input.negativeStyles).toEqual(expect.arrayContaining(['explicit lyrics', 'scary']))
+    const audio = await A.waitAsset(done.resultAssetId)
+    expect(audio.kind).toBe('AUDIO')
+    expect(Math.abs(audio.durationFlicks / FLICKS_PER_SECOND - 10)).toBeLessThan(0.2)
+    const lib = await A.get(`/api/workspaces/${wsA}/music?sfx=false&q=Vogais`)
+    const track = lib.json.find((m: { id: string }) => m.id === done.result.musicTrackId)
+    expect(track).toBeTruthy()
+    // provedor simulado: nunca vira uso comercial, mesmo com a declaração marcada
+    expect(track.license.commercialUse).toBe(false)
+    expect(track.license.platformRestrictions).toContain(g.json.id)
+    // outro espaço de trabalho não vê a faixa
+    const other = await B.get(`/api/workspaces/${wsB}/music?sfx=false&q=Vogais`)
+    expect(other.json.some((m: { id: string }) => m.id === track.id)).toBe(false)
+  }, 120_000)
   test('nenhuma resposta pública contém a chave do servidor', async () => {
     const secret = TEST_ENV.GEMINI_API_KEY!
     const bodies = [

@@ -4,7 +4,9 @@ import { toNum } from '@orion/db'
 import {
   type Estimate,
   applyPronunciation,
+  KIDS_NEGATIVE_STYLES,
   findImage,
+  findMusic,
   findTranscription,
   findTts,
   findVideo,
@@ -95,6 +97,16 @@ async function resolveRequest(deps: Deps, ws: string, req: GenerationRequest): P
       const dict = ((profile?.settings as { pronunciation?: Record<string, string> } | null)?.pronunciation ?? {}) as Record<string, string>
       const text = applyPronunciation(req.text, dict)
       return { configured: a.status(env).configured, estimate: a.estimate(req.model, text, pricingFor(env, a.id, req.model)), finalInput: { ...req, text } }
+    }
+    case 'MUSIC': {
+      const a = findMusic(req.provider, env)
+      if (!a) throw new HttpError(404, 'provider_not_found', 'Provedor de música desconhecido.')
+      const model = a.models().find((m) => m.id === req.model)
+      if (!model) throw new HttpError(400, 'model_not_found', 'Modelo indisponível.')
+      const seconds = req.sections.reduce((t, s) => t + s.durationSeconds, 0)
+      if (seconds > model.maxSeconds) throw new HttpError(400, 'duration_unsupported', `${model.label} gera até ${model.maxSeconds} s por música. Divida em duas músicas.`)
+      // estilos proibidos para conteúdo infantil sempre entram como negativos
+      return { configured: a.status(env).configured, estimate: a.estimate(req.model, seconds, pricingFor(env, a.id, req.model)), finalInput: { ...req, negativeStyles: KIDS_NEGATIVE_STYLES } }
     }
     case 'TRANSCRIPTION': {
       const a = findTranscription(req.provider, env)

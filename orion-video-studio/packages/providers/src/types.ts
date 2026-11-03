@@ -147,6 +147,22 @@ export interface TranscriptionAdapter {
   transcribe(input: { model: string; path: string; language: string }, env: Env): Promise<TranscriptionResult>
 }
 
+export interface MusicSection {
+  name: string
+  durationSeconds: number
+  /** versos cantados; vazio = trecho instrumental */
+  lines: string[]
+}
+
+export interface MusicAdapter {
+  id: string
+  label: string
+  status(env: Env): ProviderStatus
+  models(): Array<{ id: string; label: string; vocals: boolean; maxSeconds: number; notes: string }>
+  estimate(model: string, seconds: number, pricing: Pricing | undefined): Estimate
+  compose(input: { model: string; styles: string[]; negativeStyles: string[]; sections: MusicSection[] }, dst: string, env: Env): Promise<{ format: 'mp3' | 'wav' }>
+}
+
 export interface ScriptAdapter {
   id: string
   label: string

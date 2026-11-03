@@ -140,6 +140,28 @@ export const GenerationRequest = z.discriminatedUnion('kind', [
     sceneKey: z.string().max(64).optional(),
   }),
   z.object({
+    kind: z.literal('MUSIC'),
+    provider: z.string(),
+    model: z.string(),
+    title: z.string().min(1).max(120),
+    /** estilos globais (em inglês o resultado é melhor, segundo o fornecedor) */
+    styles: z.array(z.string().min(2).max(80)).min(1).max(8),
+    sections: z
+      .array(
+        z.object({
+          name: z.string().min(1).max(40),
+          durationSeconds: z.number().int().min(3).max(120),
+          /** versos cantados (escritos e revisados por pessoas); vazio = instrumental */
+          lines: z.array(z.string().min(1).max(200)).max(30),
+        }),
+      )
+      .min(1)
+      .max(20),
+    mood: z.string().max(40).default('alegre'),
+    /** a pessoa declara que o plano contratado permite uso comercial */
+    commercialPlanDeclared: z.boolean().default(false),
+  }),
+  z.object({
     kind: z.literal('TRANSCRIPTION'),
     provider: z.string(),
     model: z.string(),

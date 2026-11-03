@@ -4,9 +4,10 @@ import { fileURLToPath } from 'node:url'
 import type { ProviderStatus } from '@orion/shared'
 import { anthropicAdapter } from './anthropic.ts'
 import { elevenLabsAdapter } from './elevenlabs.ts'
-import { mockImageAdapter, mockTranscriptionAdapter, mockTtsAdapter, mockVideoAdapter } from './mock.ts'
+import { mockImageAdapter, mockMusicAdapter, mockTranscriptionAdapter, mockTtsAdapter, mockVideoAdapter } from './mock.ts'
+import { elevenLabsMusicAdapter } from './music.ts'
 import { openAiImageAdapter, openAiTranscriptionAdapter } from './openai.ts'
-import type { Env, ImageAdapter, Pricing, ScriptAdapter, TranscriptionAdapter, TtsAdapter, VideoAdapter } from './types.ts'
+import type { Env, ImageAdapter, MusicAdapter, Pricing, ScriptAdapter, TranscriptionAdapter, TtsAdapter, VideoAdapter } from './types.ts'
 import { veoAdapter } from './veo.ts'
 
 export const VIDEO_ADAPTERS: VideoAdapter[] = [veoAdapter, mockVideoAdapter]
@@ -14,6 +15,7 @@ export const IMAGE_ADAPTERS: ImageAdapter[] = [openAiImageAdapter, mockImageAdap
 export const TTS_ADAPTERS: TtsAdapter[] = [elevenLabsAdapter, mockTtsAdapter]
 export const TRANSCRIPTION_ADAPTERS: TranscriptionAdapter[] = [openAiTranscriptionAdapter, mockTranscriptionAdapter]
 export const SCRIPT_ADAPTERS: ScriptAdapter[] = [anthropicAdapter]
+export const MUSIC_ADAPTERS: MusicAdapter[] = [elevenLabsMusicAdapter, mockMusicAdapter]
 
 const isMock = (id: string) => id.startsWith('mock-')
 
@@ -24,7 +26,7 @@ function visible<T extends { id: string }>(list: T[], env: Env): T[] {
 
 export function providerStatuses(env: Env): ProviderStatus[] {
   const out: ProviderStatus[] = []
-  for (const a of [...visible(VIDEO_ADAPTERS, env), ...visible(IMAGE_ADAPTERS, env), ...visible(TTS_ADAPTERS, env), ...visible(TRANSCRIPTION_ADAPTERS, env), ...SCRIPT_ADAPTERS]) {
+  for (const a of [...visible(VIDEO_ADAPTERS, env), ...visible(IMAGE_ADAPTERS, env), ...visible(TTS_ADAPTERS, env), ...visible(TRANSCRIPTION_ADAPTERS, env), ...visible(MUSIC_ADAPTERS, env), ...SCRIPT_ADAPTERS]) {
     out.push(a.status(env))
   }
   out.push({
@@ -36,20 +38,14 @@ export function providerStatuses(env: Env): ProviderStatus[] {
     missingEnv: [],
     notes: 'Divide roteiros em cenas e estima durações sem IA. Sempre disponível.',
   })
-  out.push({
-    id: 'music-generation',
-    label: 'Geração musical',
-    kinds: ['MUSIC'],
-    configured: false,
-    mode: 'pending-config',
-    missingEnv: ['adapter não implementado'],
-    notes: 'Interface pronta (MusicAdapter). Será ativada apenas com API oficial, credenciais e termos que permitam sincronização comercial.',
-  })
   return out
 }
 
 export function findVideo(id: string, env: Env) {
   return visible(VIDEO_ADAPTERS, env).find((a) => a.id === id)
+}
+export function findMusic(id: string, env: Env) {
+  return visible(MUSIC_ADAPTERS, env).find((a) => a.id === id)
 }
 export function findImage(id: string, env: Env) {
   return visible(IMAGE_ADAPTERS, env).find((a) => a.id === id)

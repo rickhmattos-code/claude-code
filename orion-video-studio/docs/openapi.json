@@ -5056,6 +5056,87 @@
                         "properties": {
                           "kind": {
                             "type": "string",
+                            "const": "MUSIC"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "model": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          },
+                          "styles": {
+                            "minItems": 1,
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 2,
+                              "maxLength": 80
+                            }
+                          },
+                          "sections": {
+                            "minItems": 1,
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 40
+                                },
+                                "durationSeconds": {
+                                  "type": "integer",
+                                  "minimum": 3,
+                                  "maximum": 120
+                                },
+                                "lines": {
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "durationSeconds",
+                                "lines"
+                              ]
+                            }
+                          },
+                          "mood": {
+                            "default": "alegre",
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          "commercialPlanDeclared": {
+                            "default": false,
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "provider",
+                          "model",
+                          "title",
+                          "styles",
+                          "sections"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
                             "const": "TRANSCRIPTION"
                           },
                           "provider": {
@@ -5329,6 +5410,87 @@
                           "model",
                           "voiceId",
                           "text"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "MUSIC"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "model": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          },
+                          "styles": {
+                            "minItems": 1,
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 2,
+                              "maxLength": 80
+                            }
+                          },
+                          "sections": {
+                            "minItems": 1,
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 40
+                                },
+                                "durationSeconds": {
+                                  "type": "integer",
+                                  "minimum": 3,
+                                  "maximum": 120
+                                },
+                                "lines": {
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200
+                                  }
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "durationSeconds",
+                                "lines"
+                              ]
+                            }
+                          },
+                          "mood": {
+                            "default": "alegre",
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          "commercialPlanDeclared": {
+                            "default": false,
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "provider",
+                          "model",
+                          "title",
+                          "styles",
+                          "sections"
                         ]
                       },
                       {
