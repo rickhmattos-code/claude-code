@@ -1,3 +1,5 @@
 [test]
 root = "."
+# orion-video-studio/ é um projeto independente (npm + vitest)
+pathIgnorePatterns = ["orion-video-studio/**"]
 timeout = 10000

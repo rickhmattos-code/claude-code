@@ -1,0 +1,14 @@
+{
+  "_comment": "Preços em CENTAVOS de USD. null = sem dado confiável (geração exige preço configurado, a menos que ALLOW_UNPRICED_GENERATION=1). Preencha com a tabela oficial do provedor, registrando fonte e data. Ver docs/providers.md.",
+  "google-veo": {
+    "veo-3.1-generate-preview": { "perSecondCents": null, "source": null, "verifiedAt": null },
+    "veo-2.0-generate-001": { "perSecondCents": null, "source": null, "verifiedAt": null }
+  },
+  "openai-image": { "gpt-image-1": { "perImageCents": null, "source": null, "verifiedAt": null } },
+  "elevenlabs": { "eleven_multilingual_v2": { "per1kCharsCents": null, "source": null, "verifiedAt": null } },
+  "openai-transcription": { "whisper-1": { "perMinuteCents": null, "source": null, "verifiedAt": null } },
+  "mock-video": { "mock-video-1": { "perSecondCents": 0, "source": "simulado", "verifiedAt": "n/a" } },
+  "mock-image": { "mock-image-1": { "perImageCents": 0, "source": "simulado", "verifiedAt": "n/a" } },
+  "mock-tts": { "mock-tts-1": { "per1kCharsCents": 0, "source": "simulado", "verifiedAt": "n/a" } },
+  "mock-transcription": { "mock-stt-1": { "perMinuteCents": 0, "source": "simulado", "verifiedAt": "n/a" } }
+}

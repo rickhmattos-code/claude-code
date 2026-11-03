@@ -1,0 +1,19 @@
+# Sobreposição opcional para redes com inspeção TLS (proxy corporativo).
+# 1) construa as imagens com a CA:  EXTRA_CA_CERT=/caminho/ca.crt sh infra/build-images.sh
+# 2) suba montando a CA nos serviços que chamam APIs externas:
+#    EXTRA_CA_CERT=/caminho/ca.crt docker compose -f infra/docker-compose.yml -f infra/docker-compose.ca.yml up -d --no-build
+# (o "compose build" com segredos de arquivo pede permissão extra do buildx; o script evita isso)
+x-ca-env: &ca-env
+  NODE_EXTRA_CA_CERTS: /run/secrets/extra_ca
+
+services:
+  api:
+    environment: *ca-env
+    secrets: [extra_ca]
+  worker:
+    environment: *ca-env
+    secrets: [extra_ca]
+
+secrets:
+  extra_ca:
+    file: ${EXTRA_CA_CERT:?defina EXTRA_CA_CERT com o caminho do certificado da CA}
